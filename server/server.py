@@ -8,15 +8,16 @@ Responsabilidades:
   - Recibir actualizaciones de estado en POST /state (llamado por los hook scripts)
   - Controlar la pantalla del dispositivo vía ADB (encender/apagar)
 
-Modos de despliegue:
-  - worker-01 (actual): sirve desde el repo, ADB a 192.168.1.129:32906
-  - Termux en el teléfono (próximo): sirve desde ~/jota-display/, ADB a sí mismo
+Modos de despliegue (variable JOTA_MODE):
+  - "worker01" (defecto): ADB remoto a 192.168.1.129, HTTP+HTTPS
+  - "termux":             ADB a localhost, HTTP solo (localhost es contexto seguro en Chrome)
 
-Puertos:
-  - :8443 HTTPS → navegador / PWA
-  - :8766 HTTP  → hook scripts del satélite Wyoming
+Variables de entorno:
+  JOTA_MODE       = "worker01" | "termux"
+  JOTA_ADB_PORT   = puerto TLS de Wireless Debugging (defecto 32906)
 """
 import json
+import os
 import ssl
 import subprocess
 import threading
@@ -25,12 +26,27 @@ import time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
-BASE_DIR = Path(__file__).parent.parent   # raíz del repo jota-display
+# ── Configuración por entorno ─────────────────────────────────────────────────
 
-PHONE_IP       = "192.168.1.129"
-PHONE_ADB_PORT = 32906           # puerto TLS Wireless Debugging; puede cambiar al reiniciar
-ADB_BIN        = "/usr/bin/adb"
-ADB_TARGET     = f"{PHONE_IP}:{PHONE_ADB_PORT}"
+TERMUX_MODE    = os.getenv("JOTA_MODE", "worker01") == "termux"
+PHONE_ADB_PORT = int(os.getenv("JOTA_ADB_PORT", "32906"))
+
+if TERMUX_MODE:
+    BASE_DIR   = Path.home() / "jota-display"
+    ADB_BIN    = str(Path.home() / "../usr/bin/adb")   # ruta en Termux
+    ADB_TARGET = f"localhost:{PHONE_ADB_PORT}"
+    HTTP_PORT  = 8766
+    HTTPS_PORT = None                                  # localhost no necesita HTTPS
+    SSL_CERT   = None
+    SSL_KEY    = None
+else:
+    BASE_DIR   = Path(__file__).parent.parent
+    ADB_BIN    = "/usr/bin/adb"
+    ADB_TARGET = f"192.168.1.129:{PHONE_ADB_PORT}"
+    HTTP_PORT  = 8766
+    HTTPS_PORT = 8443
+    SSL_CERT   = "/home/sito/kiosk_cert.pem"
+    SSL_KEY    = "/home/sito/kiosk_key.pem"
 
 STATE = {"state": "idle", "text": "", "ts": 0}
 CLIENTS: list[queue.SimpleQueue] = []
@@ -217,17 +233,20 @@ class Handler(BaseHTTPRequestHandler):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    mode_label = "termux" if TERMUX_MODE else "worker01"
+    print(f"[jota-display] modo={mode_label}  base={BASE_DIR}  adb={ADB_TARGET}")
+
     threading.Thread(target=adb_watchdog, daemon=True).start()
 
-    # HTTPS para el browser (PWA requiere HTTPS para modo standalone)
-    https_server = ThreadingHTTPServer(("0.0.0.0", 8443), Handler)
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ctx.load_cert_chain("/home/sito/kiosk_cert.pem", "/home/sito/kiosk_key.pem")
-    https_server.socket = ctx.wrap_socket(https_server.socket, server_side=True)
+    http_server = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), Handler)
 
-    # HTTP para los hooks del teléfono (LAN interna, sin HTTPS)
-    http_server = ThreadingHTTPServer(("0.0.0.0", 8766), Handler)
+    if HTTPS_PORT:
+        https_server = ThreadingHTTPServer(("0.0.0.0", HTTPS_PORT), Handler)
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(SSL_CERT, SSL_KEY)
+        https_server.socket = ctx.wrap_socket(https_server.socket, server_side=True)
+        threading.Thread(target=https_server.serve_forever, daemon=True).start()
+        print(f"[jota-display] HTTPS en :{HTTPS_PORT}")
 
-    threading.Thread(target=http_server.serve_forever, daemon=True).start()
-    print("jota-display en https://0.0.0.0:8443/ y http://0.0.0.0:8766/")
-    https_server.serve_forever()
+    print(f"[jota-display] HTTP  en :{HTTP_PORT}")
+    http_server.serve_forever()
