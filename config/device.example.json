@@ -1,0 +1,12 @@
+{
+  "name": "Habitación principal",
+  "type": "phone",
+  "wallpanel": {
+    "enabled": true,
+    "port": 2971
+  },
+  "adb": {
+    "port": 32906
+  },
+  "screenTimeout": 8
+}

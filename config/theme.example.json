@@ -1,0 +1,19 @@
+{
+  "colors": {
+    "bg":      "#000000",
+    "fg":      "#f1f5f9",
+    "fgDim":   "#475569",
+    "green":   "#4ade80",
+    "blue":    "#60a5fa",
+    "violet":  "#c4b5fd"
+  },
+  "font": {
+    "family": "system-ui, -apple-system, sans-serif",
+    "weightLight": 300,
+    "weightNormal": 400
+  },
+  "animations": {
+    "enabled": true,
+    "speed": "normal"
+  }
+}

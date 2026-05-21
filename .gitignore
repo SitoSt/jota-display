@@ -3,3 +3,17 @@ __pycache__/
 *.pem
 *.key
 .DS_Store
+
+# Config con datos reales (usar los *.example.json como referencia)
+config/ha.json
+config/device.json
+config/widgets.json
+config/idle.json
+config/theme.json
+
+# Build output (Fase 2+)
+dist/
+node_modules/
+
+# Logs del dispositivo
+*.log

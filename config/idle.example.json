@@ -1,0 +1,15 @@
+{
+  "default": "clock",
+  "rules": [
+    { "from": "23:00", "to": "07:00", "show": "off" },
+    { "from": "07:00", "to": "23:00", "show": "clock" }
+  ],
+  "options": {
+    "clock": {
+      "format": "HH:mm",
+      "showDate": true,
+      "showWeather": false
+    },
+    "off": {}
+  }
+}

@@ -1,20 +1,72 @@
 # jota-display
 
-UI web para el asistente de voz Jota. Se ejecuta en el dispositivo que actúa como
-terminal de voz (actualmente un Huawei P8 Lite). Muestra el estado del pipeline de
-voz en tiempo real: escuchando, pensando, respondiendo.
+Interfaz web de código abierto para dispositivos siempre encendidos con asistente de voz. Muestra el estado de la conversación en tiempo real y permite controlar el hogar desde la pantalla.
+
+Diseñado para correr localmente en el propio dispositivo: teléfonos Android (via Termux), Raspberry Pi, tablets, cualquier pantalla con un navegador.
+
+> **Estado actual:** MVP — panel de voz funcional con SSE. Ver [SPEC](docs/SPEC.md) para la hoja de ruta completa.
+
+---
+
+## Qué hace ahora mismo
+
+- Muestra el estado del asistente: escuchando 🟢, pensando 🔵, respondiendo 🟣
+- Muestra la transcripción de lo que dices y la respuesta de Jota
+- Se enciende y apaga la pantalla automáticamente con cada conversación
+- Corre completamente en local — sin dependencia de red para la UI
+
+## Qué hará (ver [SPEC](docs/SPEC.md))
+
+- Widgets configurables para controlar Home Assistant desde la pantalla
+- Múltiples paneles (voz + dashboard domótico + más)
+- Interacción táctil para cancelar el pipeline, controlar dispositivos
+- Contenido enriquecido: markdown, imágenes, cámaras
+- Sistema de temas configurable
+- Pantalla idle configurable (reloj, clima, reglas horarias)
+
+---
 
 ## Stack
 
 | Capa | Tecnología |
 |------|-----------|
-| UI | Vue 3 ESM (sin build step) |
-| Comunicación | Server-Sent Events (SSE) |
-| Servidor | Python `http.server` |
-| Control pantalla | ADB (Android Debug Bridge) |
+| UI | Vue 3 + ESM (sin build por ahora; Vite en Fase 2) |
+| Estado en tiempo real | Server-Sent Events (SSE) |
+| Servidor | Python `http.server` (stdlib, sin dependencias) |
+| Control de pantalla | WallPanel API REST (HTTP local) |
+| Dispositivo Android | Termux |
 
-Vue 3 se incluye como fichero local en `lib/vue.esm-browser.js` — no hay CDN ni
-dependencias externas. No se necesita `npm`, `node`, ni ninguna herramienta de build.
+---
+
+## Instalación rápida
+
+### En el dispositivo (Android + Termux)
+
+```bash
+# Clonar el repo
+git clone https://github.com/SitoSt/jota-display ~/jota-display
+
+# Dar permisos
+chmod +x ~/jota-display/hooks/*.sh
+chmod +x ~/jota-display/server/start_termux.sh
+
+# Arrancar el servidor
+JOTA_MODE=termux JOTA_ADB_PORT=32906 \
+  nohup python3 ~/jota-display/server/server.py \
+  >> ~/jota-display.log 2>&1 &
+
+# Abrir en el navegador del teléfono
+# → http://localhost:8766/
+```
+
+### En Linux / Raspberry Pi
+
+```bash
+git clone https://github.com/SitoSt/jota-display
+cd jota-display
+python3 server/server.py
+# → http://localhost:8766/
+```
 
 ---
 
@@ -24,203 +76,103 @@ dependencias externas. No se necesita `npm`, `node`, ni ninguna herramienta de b
 jota-display/
 ├── index.html              # punto de entrada
 ├── app.js                  # raíz Vue, store reactivo, conexión SSE
-├── style.css               # todos los estilos
+├── style.css               # estilos globales
 ├── manifest.json           # PWA manifest
 ├── components/
 │   ├── Orb.js              # esfera animada (estado visual)
 │   ├── UserBubble.js       # burbuja con el transcript del usuario
 │   └── JotaBubble.js       # burbuja con la respuesta de Jota
 ├── lib/
-│   └── vue.esm-browser.js  # Vue 3 local (no modificar)
+│   └── vue.esm-browser.js  # Vue 3 local (sin CDN)
 ├── server/
-│   └── server.py           # servidor HTTP/SSE + control ADB
+│   ├── server.py           # servidor HTTP/SSE + control WallPanel/ADB
+│   └── start_termux.sh     # script de arranque para Termux
 ├── hooks/                  # scripts llamados por wyoming-satellite
-│   ├── on_detection.sh     # wake word detectada
-│   ├── on_transcript.sh    # STT completado
-│   └── on_synthesize.sh    # respuesta lista para TTS
-└── deploy.sh               # despliega al dispositivo vía SCP+ADB
+│   ├── on_detection.sh     # wake word detectada → state: listening
+│   ├── on_transcript.sh    # STT completo → state: thinking + texto
+│   └── on_synthesize.sh    # respuesta lista → state: response + texto
+├── config/                 # configuración del dispositivo (*.example.json de referencia)
+└── docs/
+    ├── SPEC.md             # especificación completa del producto
+    ├── device-setup.md     # instalación y operación del dispositivo
+    └── phone-patches.md    # parches manuales en wyoming-satellite / openwakeword
 ```
-
----
-
-## Estados de la UI
-
-El sistema tiene cuatro estados. El servidor mantiene el estado actual y lo difunde
-a todos los clientes SSE conectados.
-
-| Estado | Orb | Burbuja usuario | Burbuja Jota | Pantalla |
-|--------|-----|-----------------|--------------|---------|
-| `idle` | Oscuro, quieto | oculta | oculta | apagada |
-| `listening` | Verde, barras animadas | oculta | oculta | encendida |
-| `thinking` | Azul, pulso | visible (transcript) | oculta | encendida |
-| `response` | Violeta | visible (transcript) | visible (respuesta) | encendida → apaga en 8s |
-
-El estado vive en `app.js` como `store` reactivo de Vue. Todos los componentes lo
-leen directamente — no hay props que pasar entre componentes.
 
 ---
 
 ## API del servidor
 
-### `GET /events`
+### `GET /events` — SSE stream
 
-Stream SSE. El navegador se conecta aquí y recibe actualizaciones de estado en
-tiempo real. Cada mensaje es un JSON en el campo `data`.
+El navegador se conecta aquí y recibe actualizaciones de estado en tiempo real.
 
-**Formato del mensaje:**
-```json
-{
-  "state": "listening",
-  "text": "",
-  "ts": 1716295200.123
-}
-```
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `state` | string | Estado actual: `idle` \| `listening` \| `thinking` \| `response` |
-| `text` | string | Texto asociado al estado. En `thinking`: transcript del usuario. En `response`: respuesta de Jota. |
-| `ts` | float | Unix timestamp del último cambio de estado |
-
-El servidor envía un ping de keepalive (`": ping"`) cada 25 segundos para mantener
-la conexión abierta.
-
-**Ejemplo de secuencia de eventos en una interacción:**
 ```
 data: {"state":"idle","text":"","ts":1716295100.0}
 data: {"state":"listening","text":"","ts":1716295200.1}
 data: {"state":"thinking","text":"qué tiempo hace","ts":1716295201.5}
-data: {"state":"response","text":"Hoy en Madrid está nublado, 18°C.","ts":1716295203.2}
-data: {"state":"idle","text":"","ts":1716295211.2}   ← automático tras 8s
+data: {"state":"response","text":"Hoy está nublado, 18°C.","ts":1716295203.2}
 ```
 
----
+### `POST /state` — actualizar estado
 
-### `POST /state`
+Usado por los hook scripts. Body JSON:
 
-Usado por los hook scripts del dispositivo para notificar cambios de estado.
-No requiere autenticación (sólo accesible desde la LAN interna por el puerto HTTP).
-
-**Body JSON:**
 ```json
 { "state": "listening" }
-```
-```json
 { "state": "thinking", "text": "qué tiempo hace mañana" }
-```
-```json
 { "state": "response", "text": "Mañana habrá sol con 22°C." }
 ```
 
-**Efectos secundarios en el servidor:**
-- `listening` → ADB `KEYCODE_WAKEUP` (enciende la pantalla)
-- `response` → programa ADB `KEYCODE_SLEEP` con 8 segundos de retardo
+Los estados válidos son: `idle` | `listening` | `thinking` | `response`
 
-**Respuesta:** `200 OK` con body `ok`
+### Simular eventos (testing)
 
----
-
-## Hook scripts
-
-Los scripts en `hooks/` son llamados por `wyoming-satellite` en el dispositivo.
-Hacen POST a `/state` en el servidor y terminan inmediatamente (no bloquean el pipeline).
-
-### `on_detection.sh`
-Disparado cuando se detecta la wake word ("Ok Nabu").
-
-```sh
-POST /state  {"state": "listening"}
-```
-
-Acción en servidor: enciende la pantalla vía ADB.
-
-### `on_transcript.sh "$1"`
-Disparado cuando el STT devuelve el transcript. `$1` contiene el texto transcrito.
-
-```sh
-POST /state  {"state": "thinking", "text": "<transcript>"}
-```
-
-### `on_synthesize.sh "$1"`
-Disparado cuando el pipeline tiene lista la respuesta para TTS. `$1` contiene
-el texto de la respuesta de Jota.
-
-```sh
-POST /state  {"state": "response", "text": "<respuesta>"}
-```
-
-Acción en servidor: programa apagado de pantalla en 8 segundos.
-
-**Configuración en `start-satellite.sh` del dispositivo:**
-```sh
---detection-command  "/data/data/com.termux/files/home/jota-display/hooks/on_detection.sh"
---transcript-command "/data/data/com.termux/files/home/jota-display/hooks/on_transcript.sh"
---synthesize-command "/data/data/com.termux/files/home/jota-display/hooks/on_synthesize.sh"
-```
-
----
-
-## Desarrollo local
-
-No se necesita ninguna herramienta. Abre `index.html` directamente en el navegador
-**o** levanta el servidor Python para tener SSE y probar la UI en vivo:
-
-```bash
-cd server
-python3 server.py
-# → http://localhost:8766  (hooks)
-# → https://localhost:8443 (navegador, requiere aceptar cert autofirmado)
-```
-
-Para simular eventos sin hablar:
 ```bash
 curl -X POST http://localhost:8766/state \
   -H 'Content-Type: application/json' \
-  -d '{"state":"listening"}'
-
-curl -X POST http://localhost:8766/state \
-  -H 'Content-Type: application/json' \
-  -d '{"state":"thinking","text":"qué tiempo hace"}'
-
-curl -X POST http://localhost:8766/state \
-  -H 'Content-Type: application/json' \
-  -d '{"state":"response","text":"Hoy está nublado con 18 grados."}'
+  -d '{"state":"thinking","text":"qué temperatura hay"}'
 ```
 
 ---
 
-## Despliegue
+## Variables de entorno del servidor
 
-```bash
-bash deploy.sh
-```
+| Variable | Valores | Por defecto | Descripción |
+|----------|---------|-------------|-------------|
+| `JOTA_MODE` | `worker01` / `termux` | `worker01` | Modo de despliegue |
+| `JOTA_ADB_PORT` | número | `32906` | Puerto TLS de Wireless Debugging |
 
-El script copia los ficheros al dispositivo vía SCP y reinicia el servicio.
-Ver `deploy.sh` para los detalles de destino y configuración.
+En modo `termux`: HTTP solo en `:8766`, ADB conecta a `localhost`.  
+En modo `worker01`: HTTP en `:8766` + HTTPS en `:8443`, ADB a IP remota.
 
 ---
 
-## Añadir un componente nuevo
+## Hooks wyoming-satellite
 
-1. Crea `components/MiComponente.js`:
-```js
-import { defineComponent } from '/lib/vue.esm-browser.js'
-import { store } from '/app.js'
+Los scripts en `hooks/` deben copiarse al dispositivo y referenciarse en `start-satellite.sh`:
 
-export default defineComponent({
-  name: 'MiComponente',
-  setup() {
-    return { store }
-  },
-  template: `<div>{{ store.current }}</div>`
-})
+```sh
+--detection-command  "/ruta/a/jota-display/hooks/on_detection.sh"
+--transcript-command "/ruta/a/jota-display/hooks/on_transcript.sh"
+--synthesize-command "/ruta/a/jota-display/hooks/on_synthesize.sh"
 ```
 
-2. Impórtalo en `app.js`:
-```js
-import MiComponente from '/components/MiComponente.js'
-// añádelo a components: { ..., MiComponente }
-// úsalo en el template: <MiComponente />
-```
+Ver `docs/device-setup.md` para la configuración completa del dispositivo.
 
-No hay build step — los cambios se ven al recargar el navegador.
+---
+
+## Contribuir
+
+El proyecto es open source y está diseñado para escalar con contribuciones de la comunidad.
+
+- Para añadir un **componente Vue**: crear `components/MiComponente.js`, importarlo en `app.js`
+- Para añadir un **widget HA** (Fase 2+): crear `src/widgets/MiWidget.vue`, registrarlo en `src/widgets/index.js`
+- Para proponer cambios en la SPEC: abrir un issue con la propuesta
+
+---
+
+## Documentación
+
+- [SPEC completa del producto](docs/SPEC.md)
+- [Configuración del dispositivo Android](docs/device-setup.md)
+- [Parches manuales en el teléfono](docs/phone-patches.md)

@@ -1,0 +1,21 @@
+{
+  "panels": {
+    "voice": {
+      "widgets": ["light-example", "temp-example"]
+    }
+  },
+  "definitions": {
+    "light-example": {
+      "type": "toggle",
+      "label": "Luz dormitorio",
+      "entity": "light.dormitorio_principal",
+      "icon": "mdi:lightbulb"
+    },
+    "temp-example": {
+      "type": "sensor",
+      "label": "Temperatura",
+      "entity": "sensor.temperatura_dormitorio",
+      "unit": "°C"
+    }
+  }
+}
