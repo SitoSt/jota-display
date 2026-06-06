@@ -1,0 +1,30 @@
+{
+  "_comment": "Stub de entidades Home Assistant para desarrollo. Cuando se implemente la integración HA real (Fase 2), server.py devolverá estos datos en lugar de conectar a HA si JOTA_DEV=true.",
+
+  "climate": {
+    "salon":    { "temperature": 21.4, "humidity": 48, "setpoint": 20.0, "hvac_mode": "heat" },
+    "dormitorio": { "temperature": 19.8, "humidity": 52, "setpoint": 18.0, "hvac_mode": "off" }
+  },
+
+  "light": {
+    "salon":        { "on": true,  "brightness": 180, "color_temp": 4000 },
+    "cocina":       { "on": true,  "brightness": 255, "color_temp": 5000 },
+    "dormitorio":   { "on": false, "brightness": 0,   "color_temp": 3000 },
+    "exterior":     { "on": false, "brightness": 0,   "color_temp": 2700 }
+  },
+
+  "cover": {
+    "persiana_salon":    { "position": 100, "state": "open" },
+    "persiana_dormitorio": { "position": 0,   "state": "closed" }
+  },
+
+  "sensor": {
+    "exterior_temperatura": { "value": 14.2, "unit": "°C" },
+    "exterior_humedad":     { "value": 72,   "unit": "%" },
+    "consumo_electrico":    { "value": 320,  "unit": "W" }
+  },
+
+  "media_player": {
+    "salon": { "state": "playing", "title": "Dark Side of the Moon", "artist": "Pink Floyd", "volume": 0.35 }
+  }
+}

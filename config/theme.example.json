@@ -1,0 +1,20 @@
+{
+  "colors": {
+    "bg":          "#000000",
+    "surface":     "#0f0f14",
+    "surface2":    "#18181f",
+    "border":      "#1e1e2a",
+    "borderHover": "#2e2e3a",
+    "fg":          "#f1f5f9",
+    "fgDim":       "#64748b",
+    "fgMuted":     "#334155",
+    "accent":      "#4ade80",
+    "accent2":     "#60a5fa",
+    "accent3":     "#c4b5fd"
+  },
+  "font": {
+    "family":      "system-ui, -apple-system, sans-serif",
+    "weightLight":  300,
+    "weightNormal": 400
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Habitación principal",
+  "type": "phone",
+  "fully": {
+    "url": "http://localhost:2323",
+    "password": "1234"
+  },
+  "screenTimeout": 8
+}

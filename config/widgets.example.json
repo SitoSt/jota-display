@@ -1,0 +1,13 @@
+[
+  {
+    "type":   "home-assistant:toggle",
+    "size":   "small",
+    "entity": "light.salon",
+    "label":  "Salón"
+  },
+  {
+    "type":   "home-assistant:sensor",
+    "size":   "small",
+    "entity": "sensor.temperatura_exterior"
+  }
+]

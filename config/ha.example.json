@@ -1,0 +1,4 @@
+{
+  "url":   "http://192.168.1.X:8123",
+  "token": "TU_LONG_LIVED_ACCESS_TOKEN_AQUI"
+}

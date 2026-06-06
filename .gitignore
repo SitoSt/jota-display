@@ -1,0 +1,32 @@
+__pycache__/
+*.py[cod]
+*.pem
+*.key
+.DS_Store
+
+# Secretos y configuración local — nunca versionar
+.env
+.env.local
+
+# Config con datos reales (usar los *.example.json como referencia)
+config/ha.json
+config/device.json
+config/widgets.json
+config/idle.json
+config/theme.json
+
+# Build output (Fase 2+)
+dist/
+node_modules/
+
+# Logs del dispositivo
+*.log
+
+# Artefactos de herramientas (no versionar)
+.superpowers/
+.playwright-mcp/
+.agents/
+.claude/
+.pytest_cache/
+skills-lock.json
+docs/superpowers/
