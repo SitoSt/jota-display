@@ -61,11 +61,13 @@ const unit  = computed(() =>
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  border: 1px solid rgba(96,165,250,0.25);
-  background: rgba(60,120,255,0.12);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  box-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 16px rgba(60,120,255,0.1);
+  border: 1px solid rgba(96,165,250,0.22);
+  background: linear-gradient(160deg, #060f22 0%, #030814 100%);
+  box-shadow:
+    0 4px 28px rgba(0,0,0,0.75),
+    0 0 20px rgba(40,90,200,0.1),
+    inset 0 1px 0 rgba(120,180,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.4);
   width: 110px;
   padding: 1rem 0.8rem 0.9rem;
   display: flex;
@@ -85,24 +87,28 @@ const unit  = computed(() =>
 }
 
 .sensor__value {
-  font-size: var(--text-sm);
+  font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 1rem;
   font-weight: 400;
-  color: rgba(255,255,255,0.88);
+  color: rgba(147,210,255,0.95);
   line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 14px rgba(100,180,255,0.4);
 }
 
 .sensor__unit {
-  font-size: var(--text-xs);
-  font-weight: 300;
-  color: rgba(255,255,255,0.4);
-  margin-left: 0.1rem;
+  font-size: 0.6rem;
+  font-weight: 400;
+  color: rgba(100,160,255,0.45);
+  margin-left: 0.15rem;
+  letter-spacing: 0.04em;
 }
 
 .sensor__label {
   font-size: var(--text-xs);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.09em;
+  color: rgba(96,165,250,0.28);
 }
 </style>

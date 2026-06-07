@@ -309,11 +309,12 @@ const stateLabel = computed(() => {
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  border: 1px solid rgba(255,140,30,0.25);
-  background: rgba(255,140,30,0.12);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
-  box-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 0 0px rgba(255,140,30,0);
+  border: 1px solid rgba(255,140,30,0.22);
+  background: linear-gradient(160deg, #1e1005 0%, #120a02 100%);
+  box-shadow:
+    0 4px 28px rgba(0,0,0,0.75),
+    inset 0 1px 0 rgba(255,200,80,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.4);
   width: 110px;
   padding: 1rem 0.8rem 0.9rem;
   display: flex;
@@ -324,11 +325,17 @@ const stateLabel = computed(() => {
   user-select: none;
   touch-action: none;
   cursor: pointer;
+  transition: box-shadow var(--dur-normal) var(--ease-out),
+              border-color var(--dur-normal) var(--ease-out);
 }
 
 .toggle--on  {
-  border-color: rgba(var(--rgb, 255,168,50), 0.5);
-  box-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 16px rgba(var(--rgb, 255,168,50), 0.2);
+  border-color: rgba(var(--rgb, 255,168,50), 0.55);
+  box-shadow:
+    0 4px 28px rgba(0,0,0,0.7),
+    0 0 32px rgba(var(--rgb, 255,168,50), 0.22),
+    inset 0 1px 0 rgba(255,220,100,0.12),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
 }
 .toggle--unavailable { opacity: 0.28; }
 
@@ -368,11 +375,15 @@ const stateLabel = computed(() => {
   z-index: 1;
   font-size: var(--text-sm);
   font-weight: 400;
-  color: var(--fg);
+  color: rgba(255,255,255,0.45);
   line-height: 1;
+  letter-spacing: 0.02em;
 }
 
-.toggle--on .toggle__value { color: rgb(var(--rgb, 255,168,50)); }
+.toggle--on .toggle__value {
+  color: rgb(var(--rgb, 255,168,50));
+  text-shadow: 0 0 12px rgba(var(--rgb, 255,168,50), 0.5);
+}
 
 .toggle__label {
   position: relative;
@@ -380,11 +391,12 @@ const stateLabel = computed(() => {
   font-size: var(--text-xs);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.09em;
+  color: rgba(255,200,80,0.25);
 }
 
-.toggle--on .toggle__label { color: rgba(var(--rgb, 255,168,50), 0.5); }
+.toggle--on .toggle__label { color: rgba(var(--rgb, 255,168,50), 0.55); }
+.toggle--off .toggle__label { color: rgba(255,255,255,0.2); }
 
 /* Modo slider */
 .toggle--slider {
