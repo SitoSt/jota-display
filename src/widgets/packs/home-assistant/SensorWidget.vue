@@ -76,8 +76,6 @@ const unit  = computed(() =>
   gap: 0.35rem;
 }
 
-.sensor--unavailable { opacity: 0.28; }
-
 .sensor__icon {
   width: 40px;
   height: 40px;

@@ -1,6 +1,6 @@
 [
   {
-    "type":   "home-assistant:toggle",
+    "type":   "home-assistant:light",
     "size":   "small",
     "entity": "light.salon",
     "label":  "Salón"
