@@ -35,11 +35,21 @@ const slots = computed(() =>
 
 <style scoped>
 .widget-grid {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: stretch;
   flex-shrink: 0;
+  padding: 10px 12px 16px;
+}
+
+.widget-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(255,255,255,0.025) 0%, transparent 100%);
+  pointer-events: none;
 }
 
 .widget-slot { flex-shrink: 0; position: relative; }
