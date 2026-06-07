@@ -309,11 +309,11 @@ const stateLabel = computed(() => {
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-glass);
+  border: 1px solid rgba(255,140,30,0.25);
+  background: rgba(255,140,30,0.12);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
-  box-shadow: 0 2px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 0 0px rgba(255,140,30,0);
   width: 110px;
   padding: 1rem 0.8rem 0.9rem;
   display: flex;
@@ -326,7 +326,10 @@ const stateLabel = computed(() => {
   cursor: pointer;
 }
 
-.toggle--on  { border-color: rgba(var(--rgb, 255,168,50), 0.22); }
+.toggle--on  {
+  border-color: rgba(var(--rgb, 255,168,50), 0.5);
+  box-shadow: 0 2px 20px rgba(0,0,0,0.6), 0 0 16px rgba(var(--rgb, 255,168,50), 0.2);
+}
 .toggle--unavailable { opacity: 0.28; }
 
 .toggle--active {
