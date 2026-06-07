@@ -309,8 +309,10 @@ const stateLabel = computed(() => {
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   width: 110px;
   padding: 1rem 0.8rem 0.9rem;
   display: flex;
@@ -350,8 +352,8 @@ const stateLabel = computed(() => {
 .toggle__icon {
   position: relative;
   z-index: 1;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -360,7 +362,7 @@ const stateLabel = computed(() => {
 .toggle__value {
   position: relative;
   z-index: 1;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 400;
   color: var(--fg);
   line-height: 1;
@@ -371,11 +373,11 @@ const stateLabel = computed(() => {
 .toggle__label {
   position: relative;
   z-index: 1;
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--fg-muted);
+  color: rgba(255,255,255,0.3);
 }
 
 .toggle--on .toggle__label { color: rgba(var(--rgb, 255,168,50), 0.5); }
