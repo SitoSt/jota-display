@@ -61,8 +61,10 @@ const unit  = computed(() =>
   position: relative;
   overflow: hidden;
   border-radius: 14px;
-  border: 1px solid rgba(96,165,250,.14);
-  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
   width: 110px;
   padding: 1rem 0.8rem 0.9rem;
   display: flex;
@@ -74,32 +76,32 @@ const unit  = computed(() =>
 .sensor--unavailable { opacity: 0.28; }
 
 .sensor__icon {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .sensor__value {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 400;
-  color: rgb(147, 197, 253);
+  color: rgba(255,255,255,0.88);
   line-height: 1;
 }
 
 .sensor__unit {
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   font-weight: 300;
-  color: rgba(96,165,250,.6);
+  color: rgba(255,255,255,0.4);
   margin-left: 0.1rem;
 }
 
 .sensor__label {
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(96,165,250,.35);
+  color: rgba(255,255,255,0.3);
 }
 </style>
