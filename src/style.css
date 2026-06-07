@@ -359,7 +359,7 @@ html, body {
   width: 22px;
   height: 2px;
   border-radius: 9999px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.25);
   transition: background var(--dur-normal) var(--ease-out),
               width var(--dur-normal) var(--ease-out);
 }
