@@ -7,11 +7,11 @@
   --bg:                   #0d0d11;
   --surface:              #0f0f14;
   --surface-2:            #18181f;
-  --surface-glass:        rgba(255,255,255,0.05);
-  --surface-glass-active: rgba(255,255,255,0.09);
+  --surface-glass:        rgba(255,255,255,0.09);
+  --surface-glass-active: rgba(255,255,255,0.14);
   --border:               #1e1e2a;
   --border-hover:         #2e2e3a;
-  --border-subtle:        rgba(255,255,255,0.08);
+  --border-subtle:        rgba(255,255,255,0.14);
   --blur:                 14px;
 
   /* Texto */

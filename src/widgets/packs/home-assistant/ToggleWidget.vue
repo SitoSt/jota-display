@@ -313,6 +313,7 @@ const stateLabel = computed(() => {
   background: var(--surface-glass);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
+  box-shadow: 0 2px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07);
   width: 110px;
   padding: 1rem 0.8rem 0.9rem;
   display: flex;
