@@ -76,7 +76,7 @@ function toggleEntity(entityId, friendlyName) {
 function inferType(entityId) {
   const domain = entityId.split('.')[0]
   if (domain === 'sensor') return 'home-assistant:sensor'
-  return 'home-assistant:toggle'
+  return 'home-assistant:light'
 }
 
 function formatState(entity) {

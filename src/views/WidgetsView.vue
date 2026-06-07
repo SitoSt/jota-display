@@ -18,7 +18,7 @@ const SWIPE_THRESHOLD = 60
 const PANELS = ['bottom-bar']
 
 const TYPE_ICON = {
-  'home-assistant:toggle': '💡',
+  'home-assistant:light':  '💡',
   'home-assistant:sensor': '📊',
 }
 

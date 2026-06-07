@@ -165,7 +165,7 @@ const popoverStyle = computed(() => ({
   '--popover-rgb': rgbStr.value,
 }))
 const popoverClass = computed(() =>
-  popoverAbove.value ? 'widget-popover toggle--popover widget-popover--above' : 'widget-popover toggle--popover'
+  popoverAbove.value ? 'widget-popover light--popover widget-popover--above' : 'widget-popover light--popover'
 )
 
 const stateLabel = computed(() => {
@@ -177,23 +177,23 @@ const stateLabel = computed(() => {
 <template>
   <div
     ref="widgetRef"
-    class="toggle"
+    class="light"
     :class="{
-      'toggle--on':     isOn,
-      'toggle--off':    !isOn,
-      'toggle--active': mode !== 'idle',
-      'toggle--slider': mode === 'slider',
+      'light--on':     isOn,
+      'light--off':    !isOn,
+      'light--active': mode !== 'idle',
+      'light--slider': mode === 'slider',
     }"
     :style="cardStyle"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
     @pointercancel="onPointerCancel"
   >
-    <div class="toggle__fill"></div>
+    <div class="light__fill"></div>
 
     <!-- ── Modo slider ─────────────────────────────────────────────────── -->
     <template v-if="mode === 'slider'">
-      <div class="toggle__icon">
+      <div class="light__icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
           <path
             d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
@@ -204,26 +204,26 @@ const stateLabel = computed(() => {
           />
         </svg>
       </div>
-      <div class="toggle__slider-body">
-        <div class="toggle__slider-top">
-          <span class="toggle__slider-name">{{ label }}</span>
-          <span class="toggle__slider-pct">{{ displayBrightness }}%</span>
+      <div class="light__slider-body">
+        <div class="light__slider-top">
+          <span class="light__slider-name">{{ label }}</span>
+          <span class="light__slider-pct">{{ displayBrightness }}%</span>
         </div>
         <div
-          class="toggle__slider-track"
+          class="light__slider-track"
           @pointerdown="onSliderPointerDown"
           @pointermove="onSliderPointerMove"
           @pointerup="onSliderPointerUp"
         >
-          <div class="toggle__slider-fill" :style="{ width: displayBrightness + '%' }"></div>
-          <div class="toggle__slider-thumb" :style="{ left: displayBrightness + '%' }"></div>
+          <div class="light__slider-fill" :style="{ width: displayBrightness + '%' }"></div>
+          <div class="light__slider-thumb" :style="{ left: displayBrightness + '%' }"></div>
         </div>
       </div>
     </template>
 
     <!-- ── Modo normal ─────────────────────────────────────────────────── -->
     <template v-else>
-      <div class="toggle__icon">
+      <div class="light__icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
           <path
             d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
@@ -238,8 +238,8 @@ const stateLabel = computed(() => {
           />
         </svg>
       </div>
-      <div class="toggle__value">{{ isOn && !isUnavail ? brightness + '%' : 'OFF' }}</div>
-      <div class="toggle__label">{{ label }}</div>
+      <div class="light__value">{{ isOn && !isUnavail ? brightness + '%' : 'OFF' }}</div>
+      <div class="light__label">{{ label }}</div>
     </template>
 
     <!-- ── Popover (Teleport a body) ───────────────────────────────────── -->
@@ -304,7 +304,7 @@ const stateLabel = computed(() => {
 </template>
 
 <style scoped>
-.toggle {
+.light {
   position: relative;
   overflow: hidden;
   border-radius: 14px;
@@ -328,7 +328,7 @@ const stateLabel = computed(() => {
               border-color var(--dur-normal) var(--ease-out);
 }
 
-.toggle--on  {
+.light--on  {
   border-color: rgba(var(--rgb, 255,168,50), 0.55);
   box-shadow:
     0 4px 28px rgba(0,0,0,0.7),
@@ -337,7 +337,7 @@ const stateLabel = computed(() => {
     inset 0 -1px 0 rgba(0,0,0,0.3);
 }
 
-.toggle--active {
+.light--active {
   transform: scale(1.06);
   transform-origin: bottom center;
   z-index: 5;
@@ -345,7 +345,7 @@ const stateLabel = computed(() => {
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.toggle__fill {
+.light__fill {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: var(--brightness, 0%);
@@ -358,7 +358,7 @@ const stateLabel = computed(() => {
   transition: height var(--dur-slow) var(--ease-out);
 }
 
-.toggle__icon {
+.light__icon {
   position: relative;
   z-index: 1;
   width: 40px;
@@ -368,7 +368,7 @@ const stateLabel = computed(() => {
   justify-content: center;
 }
 
-.toggle__value {
+.light__value {
   position: relative;
   z-index: 1;
   font-size: var(--text-sm);
@@ -378,12 +378,12 @@ const stateLabel = computed(() => {
   letter-spacing: 0.02em;
 }
 
-.toggle--on .toggle__value {
+.light--on .light__value {
   color: rgb(var(--rgb, 255,168,50));
   text-shadow: 0 0 12px rgba(var(--rgb, 255,168,50), 0.5);
 }
 
-.toggle__label {
+.light__label {
   position: relative;
   z-index: 1;
   font-size: var(--text-xs);
@@ -393,11 +393,11 @@ const stateLabel = computed(() => {
   color: rgba(255,200,80,0.25);
 }
 
-.toggle--on .toggle__label { color: rgba(var(--rgb, 255,168,50), 0.55); }
-.toggle--off .toggle__label { color: rgba(255,255,255,0.2); }
+.light--on .light__label { color: rgba(var(--rgb, 255,168,50), 0.55); }
+.light--off .light__label { color: rgba(255,255,255,0.2); }
 
 /* Modo slider */
-.toggle--slider {
+.light--slider {
   position: absolute;
   bottom: 0; left: 0;
   width: 250px;
@@ -411,7 +411,7 @@ const stateLabel = computed(() => {
   border-color: rgba(var(--rgb, 255,168,50), .4);
 }
 
-.toggle__slider-body {
+.light__slider-body {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -420,13 +420,13 @@ const stateLabel = computed(() => {
   z-index: 1;
 }
 
-.toggle__slider-top {
+.light__slider-top {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 }
 
-.toggle__slider-name {
+.light__slider-name {
   font-size: 0.62rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -434,13 +434,13 @@ const stateLabel = computed(() => {
   color: rgba(var(--rgb, 255,168,50), .6);
 }
 
-.toggle__slider-pct {
+.light__slider-pct {
   font-size: 0.85rem;
   font-weight: 400;
   color: rgb(var(--rgb, 255,168,50));
 }
 
-.toggle__slider-track {
+.light__slider-track {
   position: relative;
   height: 5px;
   background: rgba(var(--rgb, 255,168,50), .1);
@@ -449,7 +449,7 @@ const stateLabel = computed(() => {
   cursor: pointer;
 }
 
-.toggle__slider-fill {
+.light__slider-fill {
   position: absolute;
   left: 0; top: 0; bottom: 0;
   border-radius: 9999px;
@@ -461,7 +461,7 @@ const stateLabel = computed(() => {
   pointer-events: none;
 }
 
-.toggle__slider-thumb {
+.light__slider-thumb {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);

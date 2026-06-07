@@ -12,9 +12,9 @@ describe('resolveWidget', () => {
     expect(resolveWidget('unknown:widget')).toBeNull()
   })
 
-  it('devuelve una función factory para home-assistant:toggle', async () => {
+  it('devuelve una función factory para home-assistant:light', async () => {
     const { resolveWidget } = await import('../../src/widgets/index.js')
-    const factory = resolveWidget('home-assistant:toggle')
+    const factory = resolveWidget('home-assistant:light')
     expect(typeof factory).toBe('function')
   })
 

@@ -16,7 +16,7 @@ vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-test-1') })
 function makeWidget(overrides = {}) {
   return {
     id: 'uuid-test-1',
-    type: 'home-assistant:toggle',
+    type: 'home-assistant:light',
     entity: 'light.salon',
     label: 'Salón',
     size: 'small',
@@ -88,7 +88,7 @@ describe('useWidgets — addWidgets', () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     const { widgets, addWidgets } = await freshComposable()
     await nextTick()
-    const items = [{ type: 'home-assistant:toggle', entity: 'light.salon', label: 'Salón', size: 'small', panel: 'bottom-bar' }]
+    const items = [{ type: 'home-assistant:light', entity: 'light.salon', label: 'Salón', size: 'small', panel: 'bottom-bar' }]
     addWidgets(items)
     expect(widgets.value).toHaveLength(1)
     expect(widgets.value[0].entity).toBe('light.salon')
@@ -99,7 +99,7 @@ describe('useWidgets — addWidgets', () => {
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) })
     const { widgets, addWidgets } = await freshComposable()
     await nextTick()
-    addWidgets([{ type: 'home-assistant:toggle', entity: 'light.salon', label: 'Salón', size: 'small', panel: 'bottom-bar' }])
+    addWidgets([{ type: 'home-assistant:light', entity: 'light.salon', label: 'Salón', size: 'small', panel: 'bottom-bar' }])
     expect(widgets.value[0].id).toBe('uuid-test-1')
   })
 })
