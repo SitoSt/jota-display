@@ -74,13 +74,13 @@ function onPointerCancel() {
     <!-- Indicador de página (solo para rutas del carrusel principal) -->
     <div
       v-if="ROUTE_ORDER.includes(route.path)"
-      class="page-dots"
+      class="page-segs"
     >
       <div
         v-for="(_, i) in ROUTE_ORDER"
         :key="i"
-        class="page-dot"
-        :class="{ 'page-dot--active': i === currentIndex }"
+        class="page-seg"
+        :class="{ 'page-seg--active': i === currentIndex }"
       />
     </div>
 
