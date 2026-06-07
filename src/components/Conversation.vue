@@ -11,7 +11,6 @@ const showResponse = computed(() =>
   !!response.value && current.value === 'response'
 )
 const showDots = computed(() => current.value === 'thinking')
-const showDivider = computed(() => showTranscript.value || showResponse.value)
 </script>
 
 <template>
@@ -29,8 +28,6 @@ const showDivider = computed(() => showTranscript.value || showResponse.value)
         <span></span><span></span><span></span>
       </div>
     </Transition>
-
-    <div class="divider" :class="{ 'divider--visible': showDivider }"></div>
 
     <Transition name="bubble">
       <div v-if="showResponse" class="bubble bubble--jota">
@@ -58,29 +55,20 @@ const showDivider = computed(() => showTranscript.value || showResponse.value)
   font-weight: var(--fw-medium);
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--fg-dim);
+  color: rgba(255,255,255,0.25);
 }
 .bubble--user .bubble__text {
   font-size: var(--text-xl);
   font-weight: var(--fw-light);
-  color: var(--fg-dim);
+  color: rgba(255,255,255,0.45);
   line-height: 1.4;
 }
 .bubble--jota .bubble__text {
   font-size: clamp(1.6rem, 4vmin, 2.2rem);
   font-weight: var(--fw-light);
-  color: var(--fg);
+  color: rgba(255,255,255,0.88);
   line-height: 1.45;
 }
-
-/* Divisor sutil */
-.divider {
-  height: 1px;
-  background: var(--border);
-  opacity: 0;
-  transition: opacity var(--dur-normal) var(--ease-in-out);
-}
-.divider--visible { opacity: 1; }
 
 /* Puntos de thinking */
 .thinking-dots {
