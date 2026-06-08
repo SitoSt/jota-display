@@ -25,6 +25,34 @@ describe('resolveWidget', () => {
   })
 })
 
+// ── resolveDefinition ───────────────────────────────────────────────────────
+describe('resolveDefinition', () => {
+  afterEach(() => vi.resetModules())
+
+  it('devuelve null para un tipo desconocido', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    expect(resolveDefinition('unknown:type')).toBeNull()
+  })
+
+  it('devuelve la definición completa para home-assistant:light', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    const def = resolveDefinition('home-assistant:light')
+    expect(def).not.toBeNull()
+    expect(def.type).toBe('home-assistant:light')
+    expect(def.configSchema).toBeDefined()
+    expect(def.fields).toBeDefined()
+  })
+
+  it('devuelve la definición completa para home-assistant:sensor', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    const def = resolveDefinition('home-assistant:sensor')
+    expect(def).not.toBeNull()
+    expect(def.type).toBe('home-assistant:sensor')
+    expect(def.configSchema).toBeDefined()
+    expect(def.fields).toBeDefined()
+  })
+})
+
 // ── WidgetGrid ───────────────────────────────────────────────────────────────
 const MockWidget = defineComponent({ template: '<div class="mock-widget" />' })
 
