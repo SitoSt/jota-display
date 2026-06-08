@@ -3,10 +3,14 @@ import { ref, readonly } from 'vue'
 const STORAGE_KEY = 'jota.widgets'
 const widgets = ref([])
 
+function _ensureIds(items) {
+  return items.map(w => w.id ? w : { ...w, id: crypto.randomUUID() })
+}
+
 function _load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) widgets.value = JSON.parse(raw)
+    if (raw) widgets.value = _ensureIds(JSON.parse(raw))
   } catch {}
 }
 
@@ -20,7 +24,7 @@ async function _syncFromServer() {
     if (!res.ok) return
     const data = await res.json()
     if (Array.isArray(data) && data.length > 0 && !_mutated) {
-      widgets.value = data
+      widgets.value = _ensureIds(data)
       _persist()
     }
   } catch {}
