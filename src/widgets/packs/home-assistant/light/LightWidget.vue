@@ -1,17 +1,7 @@
-<!-- src/widgets/packs/home-assistant/LightWidget.vue -->
-<script>
-export const meta = {
-  pack:        'home-assistant',
-  type:        'light',
-  label:       'Luz',
-  sizes:       ['small'],
-  defaultSize: 'small',
-}
-</script>
-
+<!-- src/widgets/packs/home-assistant/light/LightWidget.vue -->
 <script setup>
 import { ref, computed } from 'vue'
-import { useHA } from '../../../composables/useHA.js'
+import { useWidget } from '../../../../composables/useWidget.js'
 import { entityToRgb } from './lightColor.js'
 
 const props = defineProps({
@@ -19,23 +9,22 @@ const props = defineProps({
   size:   { type: String, default: 'small' },
 })
 
-const { entities, callService } = useHA()
+const { state, isAvailable, dispatch } = useWidget(props)
 
-const entity    = computed(() => entities.value[props.config.entity])
-const isOn      = computed(() => entity.value?.state === 'on')
-const isUnavail = computed(() => !entity.value || entity.value.state === 'unavailable')
+const isOn      = computed(() => state.value?.state === 'on')
+const isUnavail = computed(() => !isAvailable.value)
 const label     = computed(() =>
   props.config.label ??
-  entity.value?.attributes?.friendly_name ??
+  state.value?.attributes?.friendly_name ??
   props.config.entity
 )
 
 const brightness = computed(() => {
-  const b = entity.value?.attributes?.brightness
+  const b = state.value?.attributes?.brightness
   return b != null ? Math.round(b / 2.55) : (isOn.value ? 100 : 0)
 })
 
-const rgb    = computed(() => entityToRgb(entity.value))
+const rgb    = computed(() => entityToRgb(state.value))
 const rgbStr = computed(() => rgb.value.join(','))
 
 const cardStyle = computed(() =>
@@ -44,14 +33,14 @@ const cardStyle = computed(() =>
     : {}
 )
 
-const mode = ref('idle')  // 'idle' | 'slider' | 'popover'
+const mode = ref('idle')
 const localBrightness = ref(null)
 const displayBrightness = computed(() => localBrightness.value ?? brightness.value)
 const widgetRef = ref(null)
 const popoverAbove = ref(false)
 
 const hasBrightness = computed(() =>
-  entity.value?.attributes?.brightness != null
+  state.value?.attributes?.brightness != null
 )
 
 let pressTimer = null
@@ -103,15 +92,11 @@ function onSliderPointerMove(e) {
 }
 
 function onSliderPointerUp() {
-  callService('light', 'turn_on', {
-    entity_id:      props.config.entity,
-    brightness_pct: localBrightness.value,
-  })
+  dispatch('light.turn_on', { brightness_pct: localBrightness.value })
   mode.value = 'idle'
   localBrightness.value = null
 }
 
-// ── Popover ───────────────────────────────────────────────────────────────────
 const popoverPos = ref({ top: 0, left: 0 })
 
 function openPopover() {
@@ -132,20 +117,17 @@ function closePopover() {
 }
 
 function turnOff() {
-  callService('light', 'turn_off', { entity_id: props.config.entity })
+  dispatch('light.turn_off')
   closePopover()
 }
 
 function commitPopoverBrightness() {
-  callService('light', 'turn_on', {
-    entity_id:      props.config.entity,
-    brightness_pct: localBrightness.value ?? brightness.value,
-  })
+  dispatch('light.turn_on', { brightness_pct: localBrightness.value ?? brightness.value })
   localBrightness.value = null
 }
 
 function setColor(r, g, b) {
-  callService('light', 'turn_on', { entity_id: props.config.entity, rgb_color: [r, g, b] })
+  dispatch('light.turn_on', { rgb_color: [r, g, b] })
 }
 
 const SWATCHES = [
@@ -191,7 +173,6 @@ const stateLabel = computed(() => {
   >
     <div class="light__fill"></div>
 
-    <!-- ── Modo slider ─────────────────────────────────────────────────── -->
     <template v-if="mode === 'slider'">
       <div class="light__icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -221,7 +202,6 @@ const stateLabel = computed(() => {
       </div>
     </template>
 
-    <!-- ── Modo normal ─────────────────────────────────────────────────── -->
     <template v-else>
       <div class="light__icon">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
@@ -242,18 +222,9 @@ const stateLabel = computed(() => {
       <div class="light__label">{{ label }}</div>
     </template>
 
-    <!-- ── Popover (Teleport a body) ───────────────────────────────────── -->
     <Teleport to="body">
-      <div
-        v-if="mode === 'popover'"
-        class="widget-overlay"
-        @click="closePopover"
-      ></div>
-      <div
-        v-if="mode === 'popover'"
-        :class="popoverClass"
-        :style="popoverStyle"
-      >
+      <div v-if="mode === 'popover'" class="widget-overlay" @click="closePopover"></div>
+      <div v-if="mode === 'popover'" :class="popoverClass" :style="popoverStyle">
         <div class="widget-popover__title">{{ label }}</div>
         <div class="widget-popover__state">{{ stateLabel }}</div>
 
@@ -265,14 +236,8 @@ const stateLabel = computed(() => {
             @pointermove.stop="onSliderPointerMove"
             @pointerup.stop="commitPopoverBrightness"
           >
-            <div
-              class="widget-popover__brightness-fill"
-              :style="{ width: (localBrightness ?? brightness) + '%' }"
-            ></div>
-            <div
-              class="widget-popover__brightness-thumb"
-              :style="{ left: (localBrightness ?? brightness) + '%' }"
-            ></div>
+            <div class="widget-popover__brightness-fill" :style="{ width: (localBrightness ?? brightness) + '%' }"></div>
+            <div class="widget-popover__brightness-thumb" :style="{ left: (localBrightness ?? brightness) + '%' }"></div>
           </div>
           <span class="widget-popover__brightness-pct">{{ localBrightness ?? brightness }}%</span>
         </div>
@@ -290,11 +255,7 @@ const stateLabel = computed(() => {
         </div>
 
         <div class="widget-popover__actions">
-          <button
-            class="widget-popover__btn"
-            data-action="off"
-            @click.stop="turnOff"
-          >Apagar</button>
+          <button class="widget-popover__btn" data-action="off" @click.stop="turnOff">Apagar</button>
           <button class="widget-popover__btn" @click.stop="closePopover">Escena</button>
           <button class="widget-popover__btn" @click.stop="closePopover">Timer</button>
         </div>
@@ -328,7 +289,7 @@ const stateLabel = computed(() => {
               border-color var(--dur-normal) var(--ease-out);
 }
 
-.light--on  {
+.light--on {
   border-color: rgba(var(--rgb, 255,168,50), 0.55);
   box-shadow:
     0 4px 28px rgba(0,0,0,0.7),
@@ -393,10 +354,9 @@ const stateLabel = computed(() => {
   color: rgba(255,200,80,0.25);
 }
 
-.light--on .light__label { color: rgba(var(--rgb, 255,168,50), 0.55); }
+.light--on .light__label  { color: rgba(var(--rgb, 255,168,50), 0.55); }
 .light--off .light__label { color: rgba(255,255,255,0.2); }
 
-/* Modo slider */
 .light--slider {
   position: absolute;
   bottom: 0; left: 0;

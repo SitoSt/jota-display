@@ -19,7 +19,7 @@ function makeEntities(state = 'on', extras = {}) {
   }
 }
 
-async function freshLight(entities = makeEntities(), config = { entity: 'light.salon' }, size = 'small') {
+async function freshLight(entities = makeEntities(), config = { entity: 'light.salon', type: 'home-assistant:light' }, size = 'small') {
   vi.resetModules()
   mockCallService.mockReset()
 
@@ -27,12 +27,13 @@ async function freshLight(entities = makeEntities(), config = { entity: 'light.s
     useHA: () => ({
       entities:    ref(entities),
       connected:   ref(true),
+      loading:     ref(false),
       callService: mockCallService,
     }),
   }))
 
   const { default: LightWidget } = await import(
-    '../../src/widgets/packs/home-assistant/LightWidget.vue'
+    '../../src/widgets/packs/home-assistant/light/LightWidget.vue'
   )
   return mount(LightWidget, {
     props:  { config, size },
@@ -80,23 +81,6 @@ describe('LightWidget — estado visual', () => {
   it('muestra "OFF" cuando está apagada', async () => {
     const w = await freshLight(makeEntities('off'))
     expect(w.text()).toContain('OFF')
-  })
-})
-
-// ── Meta ─────────────────────────────────────────────────────────────────────
-describe('LightWidget — meta', () => {
-  it('exporta meta con pack, type, sizes y defaultSize', async () => {
-    vi.resetModules()
-    vi.doMock('../../src/composables/useHA.js', () => ({
-      useHA: () => ({ entities: ref({}), connected: ref(false), callService: vi.fn() }),
-    }))
-    const { meta } = await import(
-      '../../src/widgets/packs/home-assistant/LightWidget.vue'
-    )
-    expect(meta.pack).toBe('home-assistant')
-    expect(meta.type).toBe('light')
-    expect(meta.sizes).toContain('small')
-    expect(meta.defaultSize).toBe('small')
   })
 })
 
