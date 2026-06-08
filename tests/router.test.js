@@ -1,17 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 vi.mock('../src/views/MainView.vue', () => ({ default: { template: '<div/>' } }))
-vi.mock('../src/views/WidgetsView.vue', () => ({ default: { template: '<div/>' } }))
-vi.mock('../src/views/ConfigView.vue', () => ({ default: { template: '<div/>' } }))
-vi.mock('../src/components/EntityBrowser.vue', () => ({ default: { template: '<div/>' } }))
 
 describe('router', () => {
-  it('tiene rutas /, /widgets, /config y /widgets/browser', async () => {
+  it('tiene la ruta raíz /', async () => {
     const { router } = await import('../src/router.js')
     const paths = router.getRoutes().map(r => r.path)
     expect(paths).toContain('/')
-    expect(paths).toContain('/widgets')
-    expect(paths).toContain('/config')
-    expect(paths).toContain('/widgets/browser')
+  })
+
+  it('no tiene rutas /widgets, /config ni /widgets/browser', async () => {
+    const { router } = await import('../src/router.js')
+    const paths = router.getRoutes().map(r => r.path)
+    expect(paths).not.toContain('/widgets')
+    expect(paths).not.toContain('/config')
+    expect(paths).not.toContain('/widgets/browser')
   })
 })
