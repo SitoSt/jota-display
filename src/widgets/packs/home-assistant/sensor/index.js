@@ -19,6 +19,4 @@ export default {
     label: (state, config) =>
       config.label ?? state.attributes.friendly_name ?? config.entity,
   },
-
-  component: () => import('./SensorWidget.vue'),
 }
