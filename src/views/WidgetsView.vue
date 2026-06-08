@@ -101,6 +101,7 @@ function onItemPointerUp(e, id) {
           <span class="widget-item__panel">{{ w.panel }}</span>
           <button
             class="widget-item__delete"
+            @pointerdown.stop
             @click.stop="removeWidget(w.id)"
           >✕</button>
         </div>
