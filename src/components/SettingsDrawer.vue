@@ -2,11 +2,15 @@
 import { ref, watch } from 'vue'
 import { useLayout } from '../composables/useLayout.js'
 import { useIdle } from '../composables/useIdle.js'
+import { useWidgets } from '../composables/useWidgets.js'
+import WidgetCatalog from './WidgetCatalog.vue'
 
 const open = ref(false)
 const { layoutClass, saveLayout } = useLayout()
 const { config, loadIdle, saveIdle } = useIdle()
+const { widgets, removeWidget } = useWidgets()
 
+const showCatalog = ref(false)
 const vaporPos = ref(layoutClass.value.replace('vapor-', ''))
 
 watch(open, async (v) => {
@@ -162,6 +166,36 @@ const vaporPositions = [
               >{{ p.label }}</button>
             </div>
           </div>
+        </section>
+
+        <!-- ── Widgets ──────────────────────────────────── -->
+        <section class="drawer__section">
+          <div class="drawer__section-header">
+            <h3 class="drawer__section-label">Widgets</h3>
+            <button
+              v-if="!showCatalog"
+              class="drawer__section-action"
+              @click="showCatalog = true"
+            >+ Añadir</button>
+          </div>
+
+          <WidgetCatalog v-if="showCatalog" @done="showCatalog = false" />
+
+          <div v-else-if="widgets.length === 0" class="drawer__empty">
+            Sin widgets configurados
+          </div>
+
+          <ul v-else class="widget-list">
+            <li
+              v-for="w in widgets"
+              :key="w.id"
+              class="widget-list__item"
+            >
+              <span class="widget-list__label">{{ w.label }}</span>
+              <span class="widget-list__entity">{{ w.entity }}</span>
+              <button class="widget-list__remove" @click="removeWidget(w.id)">✕</button>
+            </li>
+          </ul>
         </section>
 
         <!-- ── Sistema ────────────────────────────────── -->
@@ -340,6 +374,53 @@ const vaporPositions = [
 
 /* Sistema */
 .system-info { font-size: var(--text-sm); color: var(--fg-muted); }
+
+/* Sección widgets */
+.drawer__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer__section-action {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--fg-dim);
+  font-size: var(--text-xs);
+  font-family: var(--font);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+.drawer__section-action:hover { border-color: var(--accent); color: var(--accent); }
+
+.drawer__empty { font-size: var(--text-sm); color: var(--fg-muted); }
+
+.widget-list { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; }
+
+.widget-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.widget-list__label  { flex: 1; font-size: var(--text-sm); color: var(--fg); }
+.widget-list__entity { font-size: 0.62rem; color: var(--fg-muted); font-family: monospace; }
+
+.widget-list__remove {
+  background: none;
+  border: none;
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: var(--radius-sm);
+}
+.widget-list__remove:hover { color: #f87171; }
 
 /* Transición */
 .drawer-enter-active { transition: opacity var(--dur-normal) var(--ease-out); }
