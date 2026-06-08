@@ -63,7 +63,6 @@ export function useWidgets() {
 
   function removeWidget(id) {
     _mutated = true
-    console.log("Removing widget with id", id)
     widgets.value = widgets.value.filter(w => w.id !== id)
     _persist()
     _pushToServer()
