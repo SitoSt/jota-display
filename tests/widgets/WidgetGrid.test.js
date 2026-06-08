@@ -64,15 +64,24 @@ async function freshWidgetGrid(widgetList = [], fetchOk = true) {
     : vi.fn(() => Promise.reject(new Error('fetch error')))
 
   vi.doMock('../../src/composables/useHA.js', () => ({
-    useHA: () => ({ entities: ref({}), connected: ref(false), callService: vi.fn() }),
+    useHA: () => ({
+      entities:    ref({}),
+      connected:   ref(false),
+      loading:     ref(false),
+      callService: vi.fn(),
+    }),
   }))
 
+  const mockDefinition = {
+    type:        'ha:mock',
+    defaultSize: 'small',
+    fields:      { value: () => 'val', label: () => 'lbl' },
+    component:   undefined,
+  }
+
   vi.doMock('../../src/widgets/index.js', () => ({
-    resolveWidget: vi.fn(type =>
-      type === 'ha:mock'
-        ? () => Promise.resolve({ default: MockWidget })
-        : null
-    ),
+    resolveWidget:     vi.fn(type => type === 'ha:mock' ? () => Promise.resolve({ default: MockWidget }) : null),
+    resolveDefinition: vi.fn(type => type === 'ha:mock' ? mockDefinition : null),
   }))
 
   const { default: WidgetGrid } = await import('../../src/widgets/WidgetGrid.vue')

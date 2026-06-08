@@ -1,20 +1,18 @@
+<!-- src/widgets/WidgetGrid.vue -->
 <script setup>
-import { computed, defineAsyncComponent } from 'vue'
-import { resolveWidget } from './index.js'
+import { computed } from 'vue'
+import { resolveDefinition } from './index.js'
 import { useWidgets } from '../composables/useWidgets.js'
+import WidgetShell from './WidgetShell.vue'
 
 const { widgets } = useWidgets()
 
 const slots = computed(() =>
   widgets.value
     .map(w => {
-      const factory = resolveWidget(w.type)
-      if (!factory) return null
-      return {
-        config:    w,
-        size:      w.size || 'small',
-        component: defineAsyncComponent(factory),
-      }
+      const definition = resolveDefinition(w.type)
+      if (!definition) return null
+      return { config: w, definition }
     })
     .filter(Boolean)
 )
@@ -26,9 +24,9 @@ const slots = computed(() =>
       v-for="(slot, i) in slots"
       :key="slot.config.id ?? i"
       class="widget-slot"
-      :class="`widget-slot--${slot.size}`"
+      :class="`widget-slot--${slot.config.size || slot.definition.defaultSize}`"
     >
-      <component :is="slot.component" :config="slot.config" :size="slot.size" />
+      <WidgetShell :config="slot.config" :definition="slot.definition" />
     </div>
   </div>
 </template>
