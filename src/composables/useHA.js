@@ -8,26 +8,50 @@ import {
 
 const entities  = ref({})
 const connected = ref(false)
-let _conn        = null
-let _initPromise = null
+const loading   = ref(false)
+let _conn           = null
+let _initPromise    = null
+let _satelliteEntity = null
 
 async function _init() {
-  const res = await fetch('/config/ha.json')
-  if (!res.ok) throw new Error('ha.json not found')
-  const { url, token } = await res.json()
-  const auth = createLongLivedTokenAuth(url, token)
-  _conn = await createConnection({ auth })
-  connected.value = true
-  subscribeEntities(_conn, ents => { entities.value = ents })
+  loading.value = true
+  try {
+    const res = await fetch('/config/ha.json')
+    if (!res.ok) throw new Error('ha.json not found')
+    const cfg = await res.json()
+    const { url, token } = cfg
+    _satelliteEntity = cfg.satellite ?? null
+    const auth = createLongLivedTokenAuth(url, token)
+    _conn = await createConnection({ auth })
+    connected.value = true
+    subscribeEntities(_conn, ents => { entities.value = ents })
+  } finally {
+    loading.value = false
+  }
 }
 
-export function useHA() {
+function _ensureInit() {
   if (!_initPromise) {
     _initPromise = _init().catch(err => {
       console.warn('[useHA]', err.message)
       _initPromise = null
     })
   }
+  return _initPromise
+}
+
+export async function subscribeHAEvents(callback, eventType) {
+  await _ensureInit()
+  if (!_conn) return () => {}
+  return _conn.subscribeEvents(callback, eventType)
+}
+
+export function getSatelliteEntity() {
+  return _satelliteEntity
+}
+
+export function useHA() {
+  _ensureInit()
 
   async function callService(domain, service, data = {}) {
     if (!_conn) return
@@ -37,6 +61,7 @@ export function useHA() {
   return {
     entities:    readonly(entities),
     connected:   readonly(connected),
+    loading:     readonly(loading),
     callService,
   }
 }
