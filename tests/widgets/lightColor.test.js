@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { colorTempToRgb, entityToRgb } from '../../src/widgets/packs/home-assistant/lightColor.js'
+import { colorTempToRgb, entityToRgb } from '../../src/widgets/packs/home-assistant/light/lightColor.js'
 
 describe('colorTempToRgb', () => {
   it('retorna azul hielo en 153 mireds (frío)', () => {

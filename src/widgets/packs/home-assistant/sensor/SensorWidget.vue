@@ -1,44 +1,31 @@
-<script>
-export const meta = {
-  pack:        'home-assistant',
-  type:        'sensor',
-  label:       'Sensor',
-  sizes:       ['small', 'medium'],
-  defaultSize: 'small',
-}
-</script>
-
+<!-- src/widgets/packs/home-assistant/sensor/SensorWidget.vue -->
 <script setup>
 import { computed } from 'vue'
-import { useHA } from '../../../composables/useHA.js'
+import { useWidget } from '../../../../composables/useWidget.js'
 
 const props = defineProps({
   config: { type: Object, required: true },
   size:   { type: String, default: 'small' },
 })
 
-const { entities } = useHA()
+const { state, isAvailable } = useWidget(props)
 
-const entity    = computed(() => entities.value[props.config.entity])
-const isUnavail = computed(() => !entity.value || entity.value.state === 'unavailable')
-const label     = computed(() =>
+const isUnavail = computed(() => !isAvailable.value)
+const label = computed(() =>
   props.config.label ??
-  entity.value?.attributes?.friendly_name ??
+  state.value?.attributes?.friendly_name ??
   props.config.entity
 )
-const value = computed(() => isUnavail.value ? '—' : entity.value.state)
+const value = computed(() => isUnavail.value ? '—' : state.value.state)
 const unit  = computed(() =>
   props.config.unit ??
-  entity.value?.attributes?.unit_of_measurement ??
+  state.value?.attributes?.unit_of_measurement ??
   ''
 )
 </script>
 
 <template>
-  <div
-    class="sensor"
-    :class="{ 'sensor--unavailable': isUnavail }"
-  >
+  <div class="sensor" :class="{ 'sensor--unavailable': isUnavail }">
     <div class="sensor__icon">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
         <path

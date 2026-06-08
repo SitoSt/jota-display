@@ -18,10 +18,10 @@ describe('resolveWidget', () => {
     expect(typeof factory).toBe('function')
   })
 
-  it('devuelve null para home-assistant:sensor (Nivel 1, sin component)', async () => {
+  it('devuelve una función factory para home-assistant:sensor', async () => {
     const { resolveWidget } = await import('../../src/widgets/index.js')
     const factory = resolveWidget('home-assistant:sensor')
-    expect(factory).toBeNull()
+    expect(typeof factory).toBe('function')
   })
 })
 

@@ -18,12 +18,13 @@ async function freshSensor(entities = makeEntity(), config = { entity: 'sensor.t
     useHA: () => ({
       entities:    ref(entities),
       connected:   ref(true),
+      loading:     ref(false),
       callService: vi.fn(),
     }),
   }))
 
   const { default: SensorWidget } = await import(
-    '../../src/widgets/packs/home-assistant/SensorWidget.vue'
+    '../../src/widgets/packs/home-assistant/sensor/SensorWidget.vue'
   )
   return mount(SensorWidget, { props: { config, size } })
 }
@@ -72,22 +73,5 @@ describe('SensorWidget — valor', () => {
   it('muestra "—" cuando state es "unavailable"', async () => {
     const w = await freshSensor(makeEntity('unavailable'))
     expect(w.text()).toContain('—')
-  })
-})
-
-describe('SensorWidget — meta', () => {
-  it('exporta meta con pack, type, sizes y defaultSize', async () => {
-    vi.resetModules()
-    vi.doMock('../../src/composables/useHA.js', () => ({
-      useHA: () => ({ entities: ref({}), connected: ref(false), callService: vi.fn() }),
-    }))
-    const { meta } = await import(
-      '../../src/widgets/packs/home-assistant/SensorWidget.vue'
-    )
-    expect(meta.pack).toBe('home-assistant')
-    expect(meta.type).toBe('sensor')
-    expect(meta.sizes).toContain('small')
-    expect(meta.sizes).toContain('medium')
-    expect(meta.defaultSize).toBe('small')
   })
 })
