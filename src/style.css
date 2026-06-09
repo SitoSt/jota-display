@@ -3,23 +3,26 @@
    Estos valores pueden ser sobreescritos por theme.json
    ═══════════════════════════════════════════════════════════ */
 :root {
-  /* Superficies */
-  --bg:                   #0d0d11;
-  --surface:              #0f0f14;
-  --surface-2:            #18181f;
-  --surface-glass:        rgba(255,255,255,0.09);
-  --surface-glass-active: rgba(255,255,255,0.14);
-  --border:               #1e1e2a;
-  --border-hover:         #2e2e3a;
-  --border-subtle:        rgba(255,255,255,0.14);
-  --blur:                 14px;
+  /* Superficies — paleta C (claridad monocroma) */
+  --bg:                   #0a0a0c;
+  --surface:              #141418;
+  --surface-2:            #1e1e24;
+  --surface-glass:        rgba(255,255,255,0.04);
+  --surface-glass-active: rgba(255,255,255,0.08);
+  --border:               #36364a;
+  --border-hover:         #44445a;
+  --border-subtle:        rgba(255,255,255,0.09);
+  --blur:                 20px;
 
   /* Texto */
-  --fg:           #f1f5f9;
-  --fg-dim:       #64748b;
-  --fg-muted:     #334155;
+  --fg:           #f0ece6;
+  --fg-dim:       #808090;
+  --fg-muted:     #44445a;
 
-  /* Acentos de estado */
+  /* Acento UI (crema — para estados activos en chrome: chips, toggles, etc.) */
+  --ui-accent:    #ede8e1;
+
+  /* Acentos de estado del orbe — independientes del chrome */
   --accent:       #4ade80;   /* listening — verde */
   --accent-2:     #60a5fa;   /* thinking  — azul  */
   --accent-3:     #c4b5fd;   /* response  — violeta */
@@ -186,16 +189,137 @@ html, body {
   z-index: 29;
 }
 
+/* ── Expand overlay (pulsación larga) ─────────────── */
+
+.light-expand-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+}
+
+.light-expand {
+  position: fixed;
+  z-index: 30;
+  height: 220px;
+  border-radius: 20px;
+  border: 1px solid rgba(var(--rgb, 255,165,45), .5);
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 0 50px rgba(var(--rgb, 255,165,45), .2),
+    0 -16px 50px rgba(0,0,0,.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 12px 16px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.light-expand__fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  pointer-events: none;
+  border-radius: 0 0 20px 20px;
+  background: linear-gradient(
+    to top,
+    rgba(var(--rgb, 255,165,45), .36) 0%,
+    rgba(var(--rgb, 255,165,45), .07) 100%
+  );
+  transition: height var(--dur-slow) var(--ease-out);
+}
+
+.light-expand__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.light-expand__name {
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255,255,255,.7);
+  letter-spacing: -.01em;
+}
+
+.light-expand__pct {
+  font-size: 20px;
+  font-weight: 200;
+  letter-spacing: -.02em;
+  color: rgb(var(--rgb, 255,200,75));
+  line-height: 1;
+}
+
+.light-expand__slider-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.light-expand__track {
+  width: 10px;
+  height: 100%;
+  background: rgba(255,255,255,.07);
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.06);
+  position: relative;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.light-expand__track-fill {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to top,
+    rgba(var(--rgb, 255,165,45), .55),
+    rgba(var(--rgb, 255,200,75), .95)
+  );
+  pointer-events: none;
+}
+
+.light-expand__thumb {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(var(--rgb, 255,205,75));
+  box-shadow:
+    0 0 12px rgba(var(--rgb, 255,165,45), .7),
+    0 2px 6px rgba(0,0,0,.5);
+  pointer-events: none;
+}
+
+/* ── Popover (tap corto) ───────────────────────────── */
+
 .widget-popover {
   position: fixed;
   z-index: 30;
-  width: 230px;
-  background: #18181f;
-  border-radius: 16px;
-  border: 1px solid rgba(var(--popover-rgb, 255,168,50), .2);
-  padding: 1rem;
-  box-shadow: 0 20px 60px rgba(0,0,0,.85);
+  width: 220px;
+  background: rgba(12,10,5,0.9);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-radius: 18px;
+  border: 1px solid rgba(var(--popover-rgb, 255,165,45), .25);
+  padding: 14px 14px 16px;
+  box-shadow:
+    0 0 40px rgba(var(--popover-rgb, 255,165,45), .1),
+    0 20px 60px rgba(0,0,0,.85);
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .widget-popover::before {
@@ -206,35 +330,67 @@ html, body {
   transform: translateX(-50%) rotate(45deg);
   width: 9px;
   height: 9px;
-  background: #18181f;
-  border-top: 1px solid rgba(var(--popover-rgb, 255,168,50), .2);
-  border-left: 1px solid rgba(var(--popover-rgb, 255,168,50), .2);
+  background: rgba(12,10,5,.9);
+  border-top: 1px solid rgba(var(--popover-rgb, 255,165,45), .25);
+  border-left: 1px solid rgba(var(--popover-rgb, 255,165,45), .25);
 }
 
-/* Flecha apunta hacia abajo cuando el popover abre por encima del widget */
 .widget-popover--above::before {
   top: unset;
   bottom: -5px;
   border-top: none;
   border-left: none;
-  border-bottom: 1px solid rgba(var(--popover-rgb, 255,168,50), .2);
-  border-right: 1px solid rgba(var(--popover-rgb, 255,168,50), .2);
+  border-bottom: 1px solid rgba(var(--popover-rgb, 255,165,45), .25);
+  border-right: 1px solid rgba(var(--popover-rgb, 255,165,45), .25);
 }
 
 .widget-popover__title {
-  font-size: .7rem;
-  font-weight: 500;
-  letter-spacing: .04em;
-  margin-bottom: .2rem;
-  color: rgb(var(--popover-rgb, 255,168,50));
+  font-size: .75rem;
+  font-weight: 400;
+  letter-spacing: -.01em;
+  color: rgba(255,255,255,.88);
 }
 
 .widget-popover__state {
   font-size: .6rem;
   text-transform: uppercase;
   letter-spacing: .09em;
-  color: rgba(var(--popover-rgb, 255,168,50), .4);
-  margin-bottom: .9rem;
+  color: rgba(var(--popover-rgb, 255,165,45), .5);
+  margin-top: -8px;
+}
+
+/* Botón único encender/apagar */
+.widget-popover__power {
+  width: 100%;
+  padding: 9px 0;
+  border-radius: 11px;
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+
+.widget-popover__power--on {
+  background: rgba(var(--popover-rgb, 255,165,45), .1);
+  border: 1px solid rgba(var(--popover-rgb, 255,165,45), .3);
+  color: rgb(var(--popover-rgb, 255,165,45));
+}
+.widget-popover__power--on:hover {
+  background: rgba(var(--popover-rgb, 255,165,45), .18);
+  border-color: rgba(var(--popover-rgb, 255,165,45), .5);
+}
+
+.widget-popover__power--off {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.5);
+}
+.widget-popover__power--off:hover {
+  background: rgba(255,255,255,.09);
+  color: rgba(255,255,255,.75);
 }
 
 .widget-popover__section {
@@ -242,24 +398,24 @@ html, body {
   text-transform: uppercase;
   letter-spacing: .1em;
   color: var(--fg-muted);
-  margin-bottom: .45rem;
 }
 
 .widget-popover__brightness-row {
   display: flex;
   align-items: center;
   gap: .5rem;
-  margin-bottom: .9rem;
+  margin-top: -6px;
 }
 
 .widget-popover__brightness-track {
   position: relative;
   flex: 1;
-  height: 5px;
-  background: var(--surface);
+  height: 6px;
+  background: rgba(255,255,255,.07);
   border-radius: 9999px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255,255,255,.06);
   cursor: pointer;
+  touch-action: none;
 }
 
 .widget-popover__brightness-fill {
@@ -268,8 +424,8 @@ html, body {
   border-radius: 9999px;
   background: linear-gradient(
     90deg,
-    rgba(var(--popover-rgb, 255,168,50), .4),
-    rgba(var(--popover-rgb, 255,168,50), .9)
+    rgba(var(--popover-rgb, 255,165,45), .5),
+    rgba(var(--popover-rgb, 255,165,45), .95)
   );
   pointer-events: none;
 }
@@ -278,11 +434,13 @@ html, body {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: rgb(var(--popover-rgb, 255,168,50));
-  box-shadow: 0 0 6px rgba(var(--popover-rgb, 255,168,50), .5);
+  background: rgb(var(--popover-rgb, 255,165,45));
+  box-shadow:
+    0 0 8px rgba(var(--popover-rgb, 255,165,45), .6),
+    0 2px 4px rgba(0,0,0,.4);
   pointer-events: none;
 }
 
@@ -291,14 +449,14 @@ html, body {
   width: 28px;
   text-align: right;
   flex-shrink: 0;
-  color: rgba(var(--popover-rgb, 255,168,50), .6);
+  color: rgba(var(--popover-rgb, 255,165,45), .65);
 }
 
 .widget-popover__swatches {
   display: flex;
   gap: .4rem;
   flex-wrap: wrap;
-  margin-bottom: .85rem;
+  margin-top: -6px;
 }
 
 .widget-popover__swatch {
@@ -312,33 +470,7 @@ html, body {
 }
 
 .widget-popover__swatch:hover { transform: scale(1.2); }
-.widget-popover__swatch--active { outline-color: rgba(255,255,255,.45); }
-
-.widget-popover__actions {
-  display: flex;
-  gap: .35rem;
-  padding-top: .75rem;
-  border-top: 1px solid var(--border);
-}
-
-.widget-popover__btn {
-  flex: 1;
-  padding: .38rem .3rem;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--fg-dim);
-  font-size: .6rem;
-  font-family: var(--font);
-  cursor: pointer;
-  text-align: center;
-  transition: border-color var(--dur-fast), color var(--dur-fast);
-}
-
-.widget-popover__btn:hover {
-  border-color: rgba(var(--popover-rgb, 255,168,50), .35);
-  color: rgb(var(--popover-rgb, 255,168,50));
-}
+.widget-popover__swatch--active { outline-color: rgba(255,255,255,.5); }
 
 /* ═══════════════════════════════════════════════════════════
    NAVEGACIÓN POR PÁGINAS — swipe horizontal

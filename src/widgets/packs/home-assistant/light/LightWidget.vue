@@ -24,106 +24,151 @@ const brightness = computed(() => {
   return b != null ? Math.round(b / 2.55) : (isOn.value ? 100 : 0)
 })
 
+const hasBrightness = computed(() => state.value?.attributes?.brightness != null)
+
 const rgb    = computed(() => entityToRgb(state.value))
 const rgbStr = computed(() => rgb.value.join(','))
 
-const cardStyle = computed(() =>
-  isOn.value && !isUnavail.value
-    ? { '--rgb': rgbStr.value, '--brightness': brightness.value + '%' }
-    : {}
-)
+const widgetStyle = computed(() => {
+  if (!isOn.value || isUnavail.value) return {}
+  return {
+    '--rgb':        rgbStr.value,
+    '--brightness': brightness.value + '%',
+    borderColor:    `rgba(${rgbStr.value},0.45)`,
+    boxShadow:      `0 0 45px rgba(${rgbStr.value},0.18), inset 0 1px 0 rgba(${rgbStr.value},0.08)`,
+  }
+})
 
-const mode = ref('idle')
+/* ── Modo de interacción ───────────────────────────── */
+const mode = ref('idle')          // 'idle' | 'expand' | 'popover'
 const localBrightness = ref(null)
 const displayBrightness = computed(() => localBrightness.value ?? brightness.value)
 const widgetRef = ref(null)
-const popoverAbove = ref(false)
 
-const hasBrightness = computed(() =>
-  state.value?.attributes?.brightness != null
-)
-
+/* ── Puntero — distingue tap vs pulsación larga ────── */
 let pressTimer = null
+const LONG_MS = 420
 
 function onPointerDown(e) {
   if (mode.value !== 'idle') return
   pressTimer = setTimeout(() => {
     pressTimer = null
-    if (hasBrightness.value && !isUnavail.value) {
-      localBrightness.value = brightness.value
-      mode.value = 'slider'
-    }
-  }, 400)
+    openExpand()
+  }, LONG_MS)
 }
 
 function onPointerUp() {
-  if (mode.value === 'slider') {
-    mode.value = 'idle'
-    localBrightness.value = null
-    return
-  }
   if (pressTimer) {
     clearTimeout(pressTimer)
     pressTimer = null
-    openPopover()
+    if (!isUnavail.value) openPopover()
   }
 }
 
 function onPointerCancel() {
   clearTimeout(pressTimer)
   pressTimer = null
-  if (mode.value === 'slider') {
-    mode.value = 'idle'
-    localBrightness.value = null
-  }
+  if (mode.value === 'expand') commitExpand()
 }
 
-function onSliderPointerDown(e) {
+/* ── Expand (pulsación larga) — slider vertical ────── */
+const expandPos = ref({ bottom: 0, left: 0, width: 0 })
+
+function openExpand() {
+  if (!hasBrightness.value || isUnavail.value) return
+  if (widgetRef.value) {
+    const r = widgetRef.value.getBoundingClientRect()
+    expandPos.value = {
+      bottom: window.innerHeight - r.bottom,
+      left:   r.left,
+      width:  r.width,
+    }
+  }
+  localBrightness.value = brightness.value
+  mode.value = 'expand'
+}
+
+function onExpandTrackDown(e) {
   e.stopPropagation()
   e.currentTarget.setPointerCapture(e.pointerId)
+  updateExpandBrightness(e)
 }
 
-function onSliderPointerMove(e) {
+function onExpandTrackMove(e) {
   if (e.buttons === 0) return
+  updateExpandBrightness(e)
+}
+
+function updateExpandBrightness(e) {
+  const rect = e.currentTarget.getBoundingClientRect()
+  localBrightness.value = Math.round(
+    Math.min(100, Math.max(0, (1 - (e.clientY - rect.top) / rect.height) * 100))
+  )
+}
+
+function commitExpand() {
+  if (localBrightness.value !== null) {
+    dispatch('light.turn_on', { brightness_pct: localBrightness.value })
+  }
+  mode.value = 'idle'
+  localBrightness.value = null
+}
+
+const expandStyle = computed(() => ({
+  bottom: expandPos.value.bottom + 'px',
+  left:   expandPos.value.left   + 'px',
+  width:  expandPos.value.width  + 'px',
+  '--rgb': rgbStr.value,
+}))
+
+/* ── Popover (tap corto) ───────────────────────────── */
+const popoverPos   = ref({ top: 0, left: 0 })
+const popoverAbove = ref(false)
+
+function openPopover() {
+  if (widgetRef.value) {
+    const r = widgetRef.value.getBoundingClientRect()
+    const POPOVER_H = 300
+    const spaceBelow = window.innerHeight - r.bottom
+    popoverAbove.value = spaceBelow < POPOVER_H + 16
+    popoverPos.value = popoverAbove.value
+      ? { top: r.top - POPOVER_H - 10, left: r.left + r.width / 2 }
+      : { top: r.bottom + 10,          left: r.left + r.width / 2 }
+  }
+  localBrightness.value = brightness.value
+  mode.value = 'popover'
+}
+
+function closePopover() {
+  mode.value = 'idle'
+  localBrightness.value = null
+}
+
+function togglePower() {
+  isOn.value ? dispatch('light.turn_off') : dispatch('light.turn_on')
+  closePopover()
+}
+
+function onPopoverSliderDown(e) {
+  e.stopPropagation()
+  e.currentTarget.setPointerCapture(e.pointerId)
+  updatePopoverBrightness(e)
+}
+
+function onPopoverSliderMove(e) {
+  if (e.buttons === 0) return
+  updatePopoverBrightness(e)
+}
+
+function updatePopoverBrightness(e) {
   const rect = e.currentTarget.getBoundingClientRect()
   localBrightness.value = Math.round(
     Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100))
   )
 }
 
-function onSliderPointerUp() {
-  dispatch('light.turn_on', { brightness_pct: localBrightness.value })
-  mode.value = 'idle'
-  localBrightness.value = null
-}
-
-const popoverPos = ref({ top: 0, left: 0 })
-
-function openPopover() {
-  if (widgetRef.value) {
-    const rect = widgetRef.value.getBoundingClientRect()
-    const POPOVER_H = 290
-    const spaceBelow = window.innerHeight - rect.bottom
-    popoverAbove.value = spaceBelow < POPOVER_H + 16
-    popoverPos.value = popoverAbove.value
-      ? { top: rect.top - POPOVER_H - 10, left: rect.left + rect.width / 2 }
-      : { top: rect.bottom + 10,          left: rect.left + rect.width / 2 }
-  }
-  mode.value = 'popover'
-}
-
-function closePopover() {
-  mode.value = 'idle'
-}
-
-function turnOff() {
-  dispatch('light.turn_off')
-  closePopover()
-}
-
 function commitPopoverBrightness() {
   dispatch('light.turn_on', { brightness_pct: localBrightness.value ?? brightness.value })
-  localBrightness.value = null
 }
 
 function setColor(r, g, b) {
@@ -142,105 +187,111 @@ const SWATCHES = [
 ]
 
 const popoverStyle = computed(() => ({
-  top:  popoverPos.value.top  + 'px',
-  left: popoverPos.value.left + 'px',
+  top:             popoverPos.value.top  + 'px',
+  left:            popoverPos.value.left + 'px',
   '--popover-rgb': rgbStr.value,
 }))
-const popoverClass = computed(() =>
-  popoverAbove.value ? 'widget-popover light--popover widget-popover--above' : 'widget-popover light--popover'
-)
-
-const stateLabel = computed(() => {
-  if (!isOn.value) return 'apagada'
-  return `encendida · ${brightness.value}%`
-})
 </script>
 
 <template>
   <div
     ref="widgetRef"
     class="light"
-    :class="{
-      'light--on':     isOn,
-      'light--off':    !isOn,
-      'light--active': mode !== 'idle',
-      'light--slider': mode === 'slider',
-    }"
-    :style="cardStyle"
+    :class="{ 'light--on': isOn && !isUnavail }"
+    :style="widgetStyle"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
     @pointercancel="onPointerCancel"
   >
-    <div class="light__fill"></div>
+    <!-- Fill de brillo (sube desde abajo con el color de la luz) -->
+    <div v-if="isOn && !isUnavail" class="light__fill" />
 
-    <template v-if="mode === 'slider'">
-      <div class="light__icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
-            :fill="`rgba(${rgbStr},${displayBrightness / 100})`"
-            :stroke="`rgba(${rgbStr},0.9)`"
-            stroke-width="1.4"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </div>
-      <div class="light__slider-body">
-        <div class="light__slider-top">
-          <span class="light__slider-name">{{ label }}</span>
-          <span class="light__slider-pct">{{ displayBrightness }}%</span>
-        </div>
-        <div
-          class="light__slider-track"
-          @pointerdown="onSliderPointerDown"
-          @pointermove="onSliderPointerMove"
-          @pointerup="onSliderPointerUp"
-        >
-          <div class="light__slider-fill" :style="{ width: displayBrightness + '%' }"></div>
-          <div class="light__slider-thumb" :style="{ left: displayBrightness + '%' }"></div>
-        </div>
-      </div>
-    </template>
+    <!-- Icono bombilla -->
+    <div class="light__icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
+          :fill="isOn && !isUnavail
+            ? `rgba(${rgbStr},${brightness / 100 * 0.55 + 0.1})`
+            : 'rgba(255,255,255,0.04)'"
+          :stroke="isOn && !isUnavail
+            ? `rgba(${rgbStr},0.9)`
+            : 'rgba(255,255,255,0.2)'"
+          stroke-width="1.4"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
 
-    <template v-else>
-      <div class="light__icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
-            :fill="isOn && !isUnavail
-              ? `rgba(${rgbStr},${brightness / 100})`
-              : 'rgba(255,255,255,0.04)'"
-            :stroke="isOn && !isUnavail
-              ? `rgba(${rgbStr},0.9)`
-              : 'rgba(255,255,255,0.2)'"
-            stroke-width="1.4"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </div>
-      <div class="light__value">{{ isOn && !isUnavail ? brightness + '%' : 'OFF' }}</div>
-      <div class="light__label">{{ label }}</div>
-    </template>
+    <div class="light__value">{{ isOn && !isUnavail ? brightness + '%' : 'OFF' }}</div>
+    <div class="light__label">{{ label }}</div>
 
+    <!-- ── Expand overlay (pulsación larga) ─────────── -->
     <Teleport to="body">
-      <div v-if="mode === 'popover'" class="widget-overlay" @click="closePopover"></div>
-      <div v-if="mode === 'popover'" :class="popoverClass" :style="popoverStyle">
-        <div class="widget-popover__title">{{ label }}</div>
-        <div class="widget-popover__state">{{ stateLabel }}</div>
-
-        <div class="widget-popover__section">Brillo</div>
-        <div class="widget-popover__brightness-row">
-          <div
-            class="widget-popover__brightness-track"
-            @pointerdown.stop="onSliderPointerDown"
-            @pointermove.stop="onSliderPointerMove"
-            @pointerup.stop="commitPopoverBrightness"
-          >
-            <div class="widget-popover__brightness-fill" :style="{ width: (localBrightness ?? brightness) + '%' }"></div>
-            <div class="widget-popover__brightness-thumb" :style="{ left: (localBrightness ?? brightness) + '%' }"></div>
-          </div>
-          <span class="widget-popover__brightness-pct">{{ localBrightness ?? brightness }}%</span>
+      <div v-if="mode === 'expand'" class="light-expand-overlay" @click="commitExpand" />
+      <div v-if="mode === 'expand'" class="light-expand" :style="expandStyle">
+        <div class="light-expand__fill" :style="{ height: displayBrightness + '%' }" />
+        <div class="light-expand__header">
+          <span class="light-expand__name">{{ label }}</span>
+          <span class="light-expand__pct">{{ displayBrightness }}%</span>
         </div>
+        <div class="light-expand__slider-wrap">
+          <div
+            class="light-expand__track"
+            @pointerdown="onExpandTrackDown"
+            @pointermove="onExpandTrackMove"
+            @pointerup="commitExpand"
+          >
+            <div class="light-expand__track-fill" :style="{ height: displayBrightness + '%' }" />
+            <div class="light-expand__thumb" :style="{ bottom: displayBrightness + '%' }" />
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- ── Popover (tap corto) ───────────────────────── -->
+    <Teleport to="body">
+      <div v-if="mode === 'popover'" class="widget-overlay" @click="closePopover" />
+      <div
+        v-if="mode === 'popover'"
+        class="widget-popover"
+        :class="{ 'widget-popover--above': popoverAbove }"
+        :style="popoverStyle"
+      >
+        <div class="widget-popover__title">{{ label }}</div>
+        <div class="widget-popover__state">
+          {{ isOn && !isUnavail ? `encendida · ${brightness}%` : 'apagada' }}
+        </div>
+
+        <button
+          class="widget-popover__power"
+          :class="isOn ? 'widget-popover__power--on' : 'widget-popover__power--off'"
+          @click.stop="togglePower"
+        >
+          {{ isOn ? 'Apagar' : 'Encender' }}
+        </button>
+
+        <template v-if="hasBrightness && isOn">
+          <div class="widget-popover__section">Brillo</div>
+          <div class="widget-popover__brightness-row">
+            <div
+              class="widget-popover__brightness-track"
+              @pointerdown.stop="onPopoverSliderDown"
+              @pointermove.stop="onPopoverSliderMove"
+              @pointerup.stop="commitPopoverBrightness"
+            >
+              <div
+                class="widget-popover__brightness-fill"
+                :style="{ width: displayBrightness + '%' }"
+              />
+              <div
+                class="widget-popover__brightness-thumb"
+                :style="{ left: displayBrightness + '%' }"
+              />
+            </div>
+            <span class="widget-popover__brightness-pct">{{ displayBrightness }}%</span>
+          </div>
+        </template>
 
         <div class="widget-popover__section">Color</div>
         <div class="widget-popover__swatches">
@@ -251,13 +302,7 @@ const stateLabel = computed(() => {
             :class="{ 'widget-popover__swatch--active': rgb[0]===r && rgb[1]===g && rgb[2]===b }"
             :style="{ background: `rgb(${r},${g},${b})` }"
             @click.stop="setColor(r, g, b)"
-          ></div>
-        </div>
-
-        <div class="widget-popover__actions">
-          <button class="widget-popover__btn" data-action="off" @click.stop="turnOff">Apagar</button>
-          <button class="widget-popover__btn" @click.stop="closePopover">Escena</button>
-          <button class="widget-popover__btn" @click.stop="closePopover">Timer</button>
+          />
         </div>
       </div>
     </Teleport>
@@ -268,57 +313,42 @@ const stateLabel = computed(() => {
 .light {
   position: relative;
   overflow: hidden;
-  border-radius: 14px;
-  border: 1px solid rgba(255,140,30,0.22);
-  background: linear-gradient(160deg, #1e1005 0%, #120a02 100%);
-  box-shadow:
-    0 4px 28px rgba(0,0,0,0.75),
-    inset 0 1px 0 rgba(255,200,80,0.06),
-    inset 0 -1px 0 rgba(0,0,0,0.4);
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   width: 110px;
-  padding: 1rem 0.8rem 0.9rem;
+  padding: 18px 12px 15px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
   user-select: none;
   touch-action: none;
-  cursor: pointer;
-  transition: box-shadow var(--dur-normal) var(--ease-out),
-              border-color var(--dur-normal) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-normal) var(--ease-out),
+    box-shadow   var(--dur-normal) var(--ease-out);
 }
 
-.light--on {
-  border-color: rgba(var(--rgb, 255,168,50), 0.55);
-  box-shadow:
-    0 4px 28px rgba(0,0,0,0.7),
-    0 0 32px rgba(var(--rgb, 255,168,50), 0.22),
-    inset 0 1px 0 rgba(255,220,100,0.12),
-    inset 0 -1px 0 rgba(0,0,0,0.3);
-}
-
-.light--active {
-  transform: scale(1.06);
-  transform-origin: bottom center;
-  z-index: 5;
-  box-shadow: 0 4px 24px rgba(0,0,0,.6);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
+/* Fill que sube desde abajo */
 .light__fill {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: var(--brightness, 0%);
   background: linear-gradient(
     to top,
-    rgba(var(--rgb, 255,168,50), .22) 0%,
-    rgba(var(--rgb, 255,168,50), .05) 100%
+    rgba(var(--rgb, 255,165,45), .32) 0%,
+    rgba(var(--rgb, 255,165,45), .06) 100%
   );
   pointer-events: none;
+  border-radius: 0 0 20px 20px;
   transition: height var(--dur-slow) var(--ease-out);
 }
 
+/* Icono */
 .light__icon {
   position: relative;
   z-index: 1;
@@ -327,109 +357,44 @@ const stateLabel = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: auto;
+  margin-top: 2px;
+  transition: filter var(--dur-normal) var(--ease-out);
 }
 
+.light--on .light__icon {
+  filter: drop-shadow(0 0 8px rgba(var(--rgb, 255,165,45), .55));
+}
+
+/* Valor */
 .light__value {
   position: relative;
   z-index: 1;
   font-size: var(--text-sm);
-  font-weight: 400;
-  color: rgba(255,255,255,0.45);
+  font-weight: 300;
+  letter-spacing: 0.01em;
   line-height: 1;
-  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.22);
+  transition: color var(--dur-normal) var(--ease-out);
 }
 
 .light--on .light__value {
-  color: rgb(var(--rgb, 255,168,50));
-  text-shadow: 0 0 12px rgba(var(--rgb, 255,168,50), 0.5);
+  color: rgb(var(--rgb, 255,200,75));
 }
 
+/* Etiqueta */
 .light__label {
   position: relative;
   z-index: 1;
   font-size: var(--text-xs);
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: rgba(255,200,80,0.25);
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.15);
+  transition: color var(--dur-normal) var(--ease-out);
 }
 
-.light--on .light__label  { color: rgba(var(--rgb, 255,168,50), 0.55); }
-.light--off .light__label { color: rgba(255,255,255,0.2); }
-
-.light--slider {
-  position: absolute;
-  bottom: 0; left: 0;
-  width: 250px;
-  flex-direction: row;
-  align-items: center;
-  padding: 0.75rem 0.85rem;
-  gap: 0.7rem;
-  overflow: hidden;
-  z-index: 20;
-  box-shadow: 0 8px 32px rgba(0,0,0,.7);
-  border-color: rgba(var(--rgb, 255,168,50), .4);
-}
-
-.light__slider-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  position: relative;
-  z-index: 1;
-}
-
-.light__slider-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.light__slider-name {
-  font-size: 0.62rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(var(--rgb, 255,168,50), .6);
-}
-
-.light__slider-pct {
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: rgb(var(--rgb, 255,168,50));
-}
-
-.light__slider-track {
-  position: relative;
-  height: 5px;
-  background: rgba(var(--rgb, 255,168,50), .1);
-  border-radius: 9999px;
-  border: 1px solid rgba(var(--rgb, 255,168,50), .15);
-  cursor: pointer;
-}
-
-.light__slider-fill {
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  border-radius: 9999px;
-  background: linear-gradient(
-    90deg,
-    rgba(var(--rgb, 255,168,50), .5),
-    rgba(var(--rgb, 255,168,50), .9)
-  );
-  pointer-events: none;
-}
-
-.light__slider-thumb {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: rgb(var(--rgb, 255,168,50));
-  box-shadow: 0 0 8px rgba(var(--rgb, 255,168,50), .6);
-  pointer-events: none;
+.light--on .light__label {
+  color: rgba(var(--rgb, 255,165,45), 0.55);
 }
 </style>

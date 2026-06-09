@@ -9,7 +9,7 @@ import Vapor from '../components/Vapor.vue'
 import Conversation from '../components/Conversation.vue'
 import WidgetGrid from '../widgets/WidgetGrid.vue'
 
-const { connectSSE, current } = useVoice()
+const { connectSSE, connectHA, current } = useVoice()
 const { loadIdle, idleActive, startIdleTimer, dismissIdle } = useIdle()
 const { layoutClass, loadLayout } = useLayout()
 
@@ -25,6 +25,7 @@ watch(current, (state) => {
 
 onMounted(async () => {
   connectSSE()
+  connectHA()
   await Promise.all([loadLayout(), loadIdle(), applyTheme()])
   if ('wakeLock' in navigator) {
     const req = () => navigator.wakeLock.request('screen').catch(() => {})
