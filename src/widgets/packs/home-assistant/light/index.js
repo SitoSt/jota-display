@@ -2,7 +2,7 @@
 export default {
   type:        'home-assistant:light',
   label:       'Luz',
-  sizes:       ['small'],
+  sizes:       ['small', 'horizontal'],
   defaultSize: 'small',
 
   configSchema: {

@@ -45,6 +45,12 @@ const localBrightness = ref(null)
 const displayBrightness = computed(() => localBrightness.value ?? brightness.value)
 const widgetRef = ref(null)
 
+/* ── Icono — tap directo para encender/apagar ────── */
+function onIconTap() {
+  if (mode.value !== 'idle' || isUnavail.value) return
+  isOn.value ? dispatch('light.turn_off') : dispatch('light.turn_on')
+}
+
 /* ── Puntero — distingue tap vs pulsación larga ────── */
 let pressTimer = null
 const LONG_MS = 420
@@ -197,7 +203,7 @@ const popoverStyle = computed(() => ({
   <div
     ref="widgetRef"
     class="light"
-    :class="{ 'light--on': isOn && !isUnavail }"
+    :class="{ 'light--on': isOn && !isUnavail, 'light--horizontal': size === 'horizontal' }"
     :style="widgetStyle"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
@@ -206,17 +212,21 @@ const popoverStyle = computed(() => ({
     <!-- Fill de brillo (sube desde abajo con el color de la luz) -->
     <div v-if="isOn && !isUnavail" class="light__fill" />
 
-    <!-- Icono bombilla -->
-    <div class="light__icon">
+    <!-- Icono bombilla — tap directo enciende/apaga -->
+    <div class="light__icon"
+      @pointerdown.stop
+      @pointerup.stop="onIconTap"
+      @pointercancel.stop
+    >
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
         <path
           d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
           :fill="isOn && !isUnavail
             ? `rgba(${rgbStr},${brightness / 100 * 0.55 + 0.1})`
-            : 'rgba(255,255,255,0.04)'"
+            : 'rgba(255,255,255,0.10)'"
           :stroke="isOn && !isUnavail
             ? `rgba(${rgbStr},0.9)`
-            : 'rgba(255,255,255,0.2)'"
+            : 'rgba(255,255,255,0.50)'"
           stroke-width="1.4"
           stroke-linejoin="round"
         />
@@ -314,11 +324,12 @@ const popoverStyle = computed(() => ({
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.09);
-  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.08);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   width: 110px;
+  height: 140px;
   padding: 18px 12px 15px;
   display: flex;
   flex-direction: column;
@@ -348,22 +359,30 @@ const popoverStyle = computed(() => ({
   transition: height var(--dur-slow) var(--ease-out);
 }
 
-/* Icono */
+/* Icono — botón circular */
 .light__icon {
   position: relative;
   z-index: 1;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: auto;
   margin-top: 2px;
-  transition: filter var(--dur-normal) var(--ease-out);
+  background: rgba(255,255,255,0.08);
+  transition:
+    background    var(--dur-normal) var(--ease-out),
+    filter        var(--dur-normal) var(--ease-out),
+    box-shadow    var(--dur-normal) var(--ease-out);
+  cursor: pointer;
 }
 
 .light--on .light__icon {
-  filter: drop-shadow(0 0 8px rgba(var(--rgb, 255,165,45), .55));
+  background: rgba(var(--rgb, 255,165,45), 0.18);
+  box-shadow: 0 0 14px rgba(var(--rgb, 255,165,45), 0.30);
+  filter: drop-shadow(0 0 6px rgba(var(--rgb, 255,165,45), .45));
 }
 
 /* Valor */
@@ -374,7 +393,7 @@ const popoverStyle = computed(() => ({
   font-weight: 300;
   letter-spacing: 0.01em;
   line-height: 1;
-  color: rgba(255,255,255,0.22);
+  color: rgba(255,255,255,0.55);
   transition: color var(--dur-normal) var(--ease-out);
 }
 
@@ -390,11 +409,49 @@ const popoverStyle = computed(() => ({
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.40);
   transition: color var(--dur-normal) var(--ease-out);
 }
 
 .light--on .light__label {
   color: rgba(var(--rgb, 255,165,45), 0.55);
+}
+
+/* ── Layout horizontal ───────────────────────────── */
+.light--horizontal {
+  width: 230px;
+  height: 70px;
+  padding: 0 18px;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.light--horizontal .light__fill {
+  top: 0;
+  right: auto;
+  height: 100%;
+  width: var(--brightness, 0%);
+  background: linear-gradient(
+    to right,
+    rgba(var(--rgb, 255,165,45), .32) 0%,
+    rgba(var(--rgb, 255,165,45), .06) 100%
+  );
+  border-radius: 20px 0 0 20px;
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.light--horizontal .light__icon {
+  margin-bottom: 0;
+  margin-top: 0;
+  flex-shrink: 0;
+}
+
+.light--horizontal .light__value {
+  font-size: var(--text-base);
+}
+
+.light--horizontal .light__label {
+  margin-left: auto;
 }
 </style>

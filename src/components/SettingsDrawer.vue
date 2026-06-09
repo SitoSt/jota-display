@@ -70,6 +70,8 @@ const timeoutOptions = [
   { value: 0,   label: 'Nunca'  },
 ]
 
+const SIZE_LABELS = { small: 'Compact.', horizontal: 'Horiz.' }
+
 const catalogTypes      = computed(() => Object.values(registry))
 const widgetDefs        = computed(() =>
   widgets.value.map(w => ({ widget: w, def: resolveDefinition(w.type) }))
@@ -479,7 +481,7 @@ const widgetSubtitle = computed(() => {
                             class="size-pill"
                             :class="{ 'size-pill--on': selectedWidget.size === sz }"
                             @click="updateWidget(selectedWidget.id, { size: sz })"
-                          >{{ sz }}</button>
+                          >{{ SIZE_LABELS[sz] ?? sz }}</button>
                         </div>
                       </div>
 
