@@ -17,7 +17,10 @@ const SPANS = {
   large:      [99, 2], // se clampea a gridCols en el template
 }
 
-// Anchura observada para calcular el tamaño de celda cuadrada
+// Tamaño de celda base: se adapta al contenedor pero nunca supera MAX_CELL
+const MAX_CELL  = 100   // px — límite para que los widgets no sean enormes en pantallas grandes
+const MIN_CELL  = 48    // px — límite mínimo para que sigan siendo legibles
+
 const gridRef   = ref(null)
 const observedW = ref(0)
 
@@ -29,8 +32,9 @@ onMounted(() => {
 onUnmounted(() => ro?.disconnect())
 
 const cellSize = computed(() => {
-  if (!observedW.value) return 64
-  return (observedW.value - gridGap.value * (gridCols.value - 1)) / gridCols.value
+  if (!observedW.value) return MAX_CELL
+  const fromContainer = (observedW.value - gridGap.value * (gridCols.value - 1)) / gridCols.value
+  return Math.max(Math.min(fromContainer, MAX_CELL), MIN_CELL)
 })
 
 const slots = computed(() =>
@@ -52,9 +56,9 @@ const slots = computed(() =>
     ref="gridRef"
     class="widget-grid"
     :style="{
-      gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
-      gridAutoRows: Math.floor(cellSize) + 'px',
-      gap: gridGap + 'px',
+      gridTemplateColumns: `repeat(${gridCols}, ${Math.floor(cellSize)}px)`,
+      gridAutoRows: `${Math.floor(cellSize)}px`,
+      gap: `${gridGap}px`,
     }"
   >
     <div
