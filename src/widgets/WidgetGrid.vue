@@ -42,7 +42,8 @@ const slots = computed(() =>
 }
 
 .widget-slot { flex-shrink: 0; position: relative; }
-.widget-slot--small  { width: 120px; }
-.widget-slot--medium { width: 240px; }
-.widget-slot--large  { width: 100%; }
+.widget-slot--small      { width: 110px; }
+.widget-slot--horizontal { width: 230px; }
+.widget-slot--medium     { width: 240px; }
+.widget-slot--large      { width: 100%; }
 </style>
