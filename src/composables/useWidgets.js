@@ -75,5 +75,13 @@ export function useWidgets() {
     _pushToServer()
   }
 
-  return { widgets: readonly(widgets), addWidgets, removeWidget, updateWidget }
+  function reorderWidgets(orderedIds) {
+    _mutated = true
+    const map = Object.fromEntries(widgets.value.map(w => [w.id, w]))
+    widgets.value = orderedIds.map(id => map[id]).filter(Boolean)
+    _persist()
+    _pushToServer()
+  }
+
+  return { widgets: readonly(widgets), addWidgets, removeWidget, updateWidget, reorderWidgets }
 }

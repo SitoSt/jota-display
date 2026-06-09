@@ -20,12 +20,59 @@ const selectedWidgetId  = ref(null)
 
 const { layoutClass, saveLayout } = useLayout()
 const { config, loadIdle, saveIdle } = useIdle()
-const { widgets, removeWidget, updateWidget } = useWidgets()
-const { gridCols, saveGrid } = useGridConfig()
+const { widgets, removeWidget, updateWidget, reorderWidgets } = useWidgets()
+const { cellPx, gridCols, gridGap, setCellPx, setCols, setGap } = useGridConfig()
 const { connected, entities } = useHA()
 
-// Widgets por fila = gridCols / 2  (cada widget small ocupa 2 unidades de base)
-const widgetsPerRow = computed(() => gridCols.value / 2)
+// Mapping de spans (igual que WidgetGrid)
+const SPANS = { small: [2,2], horizontal: [2,1], medium: [4,2], large: [99,2] }
+function spanStyle(size) {
+  const [col, row] = SPANS[size] ?? [2,2]
+  return { gridColumn: `span ${Math.min(col, gridCols.value)}`, gridRow: `span ${row}` }
+}
+
+const tableroGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${gridCols.value}, ${cellPx.value}px)`,
+  gridAutoRows:        `${cellPx.value}px`,
+  gap:                 `${gridGap.value}px`,
+}))
+
+// Drag-to-reorder
+const tableroRef  = ref(null)
+const dragId      = ref(null)
+const dragOverIdx = ref(null)
+
+function onItemPointerDown(e, id) {
+  if (!isEditing.value) return
+  dragId.value = id
+  dragOverIdx.value = widgetDefs.value.findIndex(({ widget }) => widget.id === id)
+}
+
+function onGridPointerMove(e) {
+  if (!dragId.value || !tableroRef.value) return
+  const items = [...tableroRef.value.querySelectorAll('.tablero-item')]
+  const idx = items.findIndex(el => {
+    const r = el.getBoundingClientRect()
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+  })
+  if (idx !== -1) dragOverIdx.value = idx
+}
+
+function onGridPointerUp() {
+  if (dragId.value !== null && dragOverIdx.value !== null) {
+    const ids = widgetDefs.value.map(({ widget }) => widget.id)
+    const from = ids.indexOf(dragId.value)
+    const to   = dragOverIdx.value
+    if (from !== -1 && from !== to) {
+      const newIds = [...ids]
+      newIds.splice(from, 1)
+      newIds.splice(to, 0, dragId.value)
+      reorderWidgets(newIds)
+    }
+  }
+  dragId.value      = null
+  dragOverIdx.value = null
+}
 
 const vaporPos = ref(layoutClass.value.replace('vapor-', ''))
 
@@ -416,15 +463,30 @@ const widgetSubtitle = computed(() => {
             <template v-else>
               <!-- Config de rejilla -->
               <div class="grid-cfg">
-                <span class="grid-cfg__label">Widgets por fila</span>
-                <div class="grid-cfg__pills">
-                  <button
-                    v-for="n in [2, 3, 4]"
-                    :key="n"
-                    class="grid-pill"
-                    :class="{ 'grid-pill--on': widgetsPerRow === n }"
-                    @click="saveGrid(n * 2)"
-                  >{{ n }}</button>
+                <div class="grid-cfg-row">
+                  <span class="grid-cfg__label">Por fila</span>
+                  <div class="grid-cfg__pills">
+                    <button v-for="n in [2, 3, 4]" :key="n"
+                      class="grid-pill"
+                      :class="{ 'grid-pill--on': gridCols === n * 2 }"
+                      @click="setCols(n * 2)">{{ n }}</button>
+                  </div>
+                </div>
+                <div class="grid-cfg-row">
+                  <span class="grid-cfg__label">Tamaño</span>
+                  <div class="grid-stepper">
+                    <button class="grid-stepper__btn" @click="setCellPx(cellPx - 5)">−</button>
+                    <span class="grid-stepper__val">{{ cellPx }}px</span>
+                    <button class="grid-stepper__btn" @click="setCellPx(cellPx + 5)">+</button>
+                  </div>
+                </div>
+                <div class="grid-cfg-row">
+                  <span class="grid-cfg__label">Espacio</span>
+                  <div class="grid-stepper">
+                    <button class="grid-stepper__btn" @click="setGap(gridGap - 2)">−</button>
+                    <span class="grid-stepper__val">{{ gridGap }}px</span>
+                    <button class="grid-stepper__btn" @click="setGap(gridGap + 2)">+</button>
+                  </div>
                 </div>
               </div>
 
@@ -448,14 +510,27 @@ const widgetSubtitle = computed(() => {
                   <button class="tablero-empty__cta" @click="showCatalog = true">+ Añadir desde catálogo</button>
                 </div>
 
-                <!-- Grid de widgets -->
-                <div v-else class="tablero-grid" :class="{ 'tablero-grid--editing': isEditing }">
+                <!-- Grid de widgets — preview 1:1 del layout real -->
+                <div
+                  v-else
+                  ref="tableroRef"
+                  class="tablero-grid"
+                  :class="{ 'tablero-grid--editing': isEditing }"
+                  :style="tableroGridStyle"
+                  @pointermove="onGridPointerMove"
+                  @pointerup="onGridPointerUp"
+                >
                   <div
-                    v-for="{ widget, def } in widgetDefs"
+                    v-for="({ widget, def }, idx) in widgetDefs"
                     :key="widget.id"
                     class="tablero-item"
-                    :data-size="widget.size || def.defaultSize || 'small'"
-                    :class="{ 'tablero-item--selected': selectedWidgetId === widget.id }"
+                    :class="{
+                      'tablero-item--selected': selectedWidgetId === widget.id,
+                      'tablero-item--dragging': dragId === widget.id,
+                      'tablero-item--dragover': isEditing && dragOverIdx === idx && dragId !== widget.id,
+                    }"
+                    :style="spanStyle(widget.size || def.defaultSize || 'small')"
+                    @pointerdown="onItemPointerDown($event, widget.id)"
                   >
                     <WidgetShell :config="widget" :definition="def" />
 
@@ -1076,10 +1151,15 @@ const widgetSubtitle = computed(() => {
 /* ── Config de rejilla ─────────────────────────────── */
 .grid-cfg {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 40px 4px;
+}
+
+.grid-cfg-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 40px 0;
-  gap: 12px;
 }
 
 .grid-cfg__label {
@@ -1088,12 +1168,10 @@ const widgetSubtitle = computed(() => {
   text-transform: uppercase;
   letter-spacing: 0.10em;
   color: rgba(255,255,255,0.35);
+  min-width: 70px;
 }
 
-.grid-cfg__pills {
-  display: flex;
-  gap: 6px;
-}
+.grid-cfg__pills { display: flex; gap: 6px; }
 
 .grid-pill {
   width: 36px;
@@ -1112,6 +1190,33 @@ const widgetSubtitle = computed(() => {
   background: rgba(255,255,255,0.12);
   border-color: rgba(255,255,255,0.28);
   color: rgba(255,255,255,0.90);
+}
+
+.grid-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.grid-stepper__btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.grid-stepper__btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.9); }
+
+.grid-stepper__val {
+  min-width: 42px;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: rgba(255,255,255,0.70);
 }
 
 /* ── Tablero ───────────────────────────────────────── */
@@ -1152,29 +1257,20 @@ const widgetSubtitle = computed(() => {
 .tablero-grid {
   flex: 1;
   overflow-y: auto;
-  padding: 36px 40px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  align-content: flex-start;
+  padding: 24px 40px 36px;
+  display: grid;   /* las columnas/filas vienen del :style inline */
+  align-content: start;
 }
 
 .tablero-item {
   position: relative;
-  flex-shrink: 0;
-  width: 90px;
-  height: 90px;
+  min-width: 0;
+  min-height: 0;
+  cursor: grab;
 }
 
-.tablero-item[data-size="horizontal"] {
-  width: 180px;
-  height: 45px;
-}
-
-.tablero-item[data-size="large"] {
-  width: 100%;
-  height: 90px;
-}
+.tablero-item--dragging  { opacity: 0.25; pointer-events: none; }
+.tablero-item--dragover  { outline: 2px solid rgba(255,255,255,0.35); border-radius: 20px; }
 
 /* En modo edición: leve opacidad para los no-seleccionados */
 .tablero-grid--editing .tablero-item { opacity: .75; transition: opacity .15s; }
