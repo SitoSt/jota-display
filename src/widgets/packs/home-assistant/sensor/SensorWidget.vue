@@ -66,8 +66,9 @@ const displayUnit = computed(() => ISO_RE.test(state.value?.state ?? '') ? '' : 
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 0 30px rgba(96,165,250,0.06), inset 0 1px 0 rgba(96,165,250,0.05);
-  width: 110px;
-  height: 140px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   padding: 18px 12px 15px;
   display: flex;
   flex-direction: column;

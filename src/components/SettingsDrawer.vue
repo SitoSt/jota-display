@@ -4,6 +4,7 @@ import { ref, computed, watch } from 'vue'
 import { useLayout } from '../composables/useLayout.js'
 import { useIdle } from '../composables/useIdle.js'
 import { useWidgets } from '../composables/useWidgets.js'
+import { useGridConfig } from '../composables/useGridConfig.js'
 import { useHA } from '../composables/useHA.js'
 import { registry, resolveDefinition } from '../widgets/index.js'
 import WidgetCatalog from './WidgetCatalog.vue'
@@ -20,7 +21,11 @@ const selectedWidgetId  = ref(null)
 const { layoutClass, saveLayout } = useLayout()
 const { config, loadIdle, saveIdle } = useIdle()
 const { widgets, removeWidget, updateWidget } = useWidgets()
+const { gridCols, saveGrid } = useGridConfig()
 const { connected, entities } = useHA()
+
+// Widgets por fila = gridCols / 2  (cada widget small ocupa 2 unidades de base)
+const widgetsPerRow = computed(() => gridCols.value / 2)
 
 const vaporPos = ref(layoutClass.value.replace('vapor-', ''))
 
@@ -409,6 +414,20 @@ const widgetSubtitle = computed(() => {
 
             <!-- Tabs normales -->
             <template v-else>
+              <!-- Config de rejilla -->
+              <div class="grid-cfg">
+                <span class="grid-cfg__label">Widgets por fila</span>
+                <div class="grid-cfg__pills">
+                  <button
+                    v-for="n in [2, 3, 4]"
+                    :key="n"
+                    class="grid-pill"
+                    :class="{ 'grid-pill--on': widgetsPerRow === n }"
+                    @click="saveGrid(n * 2)"
+                  >{{ n }}</button>
+                </div>
+              </div>
+
               <div class="tab-bar">
                 <button class="tab" :class="{ 'tab--on': widgetTab === 'tablero' }"
                   @click="widgetTab = 'tablero'">Tablero</button>
@@ -435,6 +454,7 @@ const widgetSubtitle = computed(() => {
                     v-for="{ widget, def } in widgetDefs"
                     :key="widget.id"
                     class="tablero-item"
+                    :data-size="widget.size || def.defaultSize || 'small'"
                     :class="{ 'tablero-item--selected': selectedWidgetId === widget.id }"
                   >
                     <WidgetShell :config="widget" :definition="def" />
@@ -1053,6 +1073,47 @@ const widgetSubtitle = computed(() => {
   border-radius: 9999px;
 }
 
+/* ── Config de rejilla ─────────────────────────────── */
+.grid-cfg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 40px 0;
+  gap: 12px;
+}
+
+.grid-cfg__label {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: rgba(255,255,255,0.35);
+}
+
+.grid-cfg__pills {
+  display: flex;
+  gap: 6px;
+}
+
+.grid-pill {
+  width: 36px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: rgba(255,255,255,0.35);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.grid-pill--on {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.90);
+}
+
 /* ── Tablero ───────────────────────────────────────── */
 .tablero {
   flex: 1;
@@ -1101,6 +1162,18 @@ const widgetSubtitle = computed(() => {
 .tablero-item {
   position: relative;
   flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+}
+
+.tablero-item[data-size="horizontal"] {
+  width: 180px;
+  height: 45px;
+}
+
+.tablero-item[data-size="large"] {
+  width: 100%;
+  height: 90px;
 }
 
 /* En modo edición: leve opacidad para los no-seleccionados */

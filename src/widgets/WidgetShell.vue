@@ -74,7 +74,6 @@ const size = computed(() =>
 .widget-shell__skeleton {
   width: 100%;
   height: 100%;
-  min-height: 140px;
   border-radius: 20px;
   background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
   background-size: 200% 100%;
@@ -90,7 +89,6 @@ const size = computed(() =>
 .widget-shell__unavailable {
   width: 100%;
   height: 100%;
-  min-height: 140px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.10);
   background: rgba(255,255,255,0.05);

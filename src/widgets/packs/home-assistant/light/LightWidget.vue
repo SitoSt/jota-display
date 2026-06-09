@@ -230,10 +230,18 @@ const popoverStyle = computed(() => ({
           stroke-width="1.4"
           stroke-linejoin="round"
         />
+        <!-- Línea de tachado cuando está apagada -->
+        <line
+          v-if="!isOn && !isUnavail"
+          x1="4" y1="4" x2="20" y2="20"
+          stroke="rgba(255,255,255,0.50)"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
       </svg>
     </div>
 
-    <div class="light__value">{{ isOn && !isUnavail ? brightness + '%' : 'OFF' }}</div>
+    <div v-if="isOn && !isUnavail" class="light__value">{{ brightness }}%</div>
     <div class="light__label">{{ label }}</div>
 
     <!-- ── Expand overlay (pulsación larga) ─────────── -->
@@ -328,8 +336,9 @@ const popoverStyle = computed(() => ({
   background: rgba(255,255,255,0.08);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  width: 110px;
-  height: 140px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
   padding: 18px 12px 15px;
   display: flex;
   flex-direction: column;
@@ -419,8 +428,6 @@ const popoverStyle = computed(() => ({
 
 /* ── Layout horizontal ───────────────────────────── */
 .light--horizontal {
-  width: 230px;
-  height: 70px;
   padding: 0 18px;
   flex-direction: row;
   align-items: center;
