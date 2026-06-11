@@ -1,7 +1,6 @@
 <!-- src/components/SettingsDrawer.vue -->
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useLayout } from '../composables/useLayout.js'
 import { useIdle } from '../composables/useIdle.js'
 import { useWidgets } from '../composables/useWidgets.js'
 import { useGridConfig } from '../composables/useGridConfig.js'
@@ -18,7 +17,6 @@ const widgetTab         = ref('tablero')
 const isEditing         = ref(false)
 const selectedWidgetId  = ref(null)
 
-const { layoutClass, saveLayout } = useLayout()
 const { config, loadIdle, saveIdle } = useIdle()
 const { widgets, removeWidget, updateWidget, reorderWidgets } = useWidgets()
 const { cellPx, gridCols, gridGap, setCellPx, setCols, setGap } = useGridConfig()
@@ -74,8 +72,6 @@ function onGridPointerUp() {
   dragOverIdx.value = null
 }
 
-const vaporPos = ref(layoutClass.value.replace('vapor-', ''))
-
 watch(open, async (v) => {
   if (v) {
     currentSection.value   = null
@@ -84,7 +80,6 @@ watch(open, async (v) => {
     isEditing.value        = false
     selectedWidgetId.value = null
     await loadIdle()
-    vaporPos.value = layoutClass.value.replace('vapor-', '')
   }
 })
 
@@ -97,15 +92,6 @@ function back() {
   navDirection.value   = 'back'
   currentSection.value = null
 }
-
-async function setVaporPos(pos) {
-  vaporPos.value = pos
-  await saveLayout(pos)
-}
-
-const vaporPosLabel = computed(() => ({
-  left: 'izquierda', right: 'derecha', top: 'arriba', bottom: 'abajo',
-}[vaporPos.value] ?? vaporPos.value))
 
 const idleModes = [
   { value: 'clock-widgets', label: 'Reloj y widgets',   sub: 'Muestra el reloj con los widgets activos' },
@@ -220,7 +206,7 @@ const widgetSubtitle = computed(() => {
                   </svg>
                 </div>
                 <div class="tile__title">Pantalla</div>
-                <div class="tile__sub">Posición del vapor,<br>distribución en pantalla</div>
+                <div class="tile__sub">Distribución en pantalla,<br>editor de layout</div>
                 <span class="tile__arrow">›</span>
               </button>
 
@@ -399,34 +385,7 @@ const widgetSubtitle = computed(() => {
               </button>
             </header>
 
-            <div class="vapor-row">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" class="vapor-row__icon">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-              </svg>
-              <span class="vapor-row__label">Vapor posicionado a la <strong>{{ vaporPosLabel }}</strong></span>
-              <div class="vapor-btns">
-                <button
-                  v-for="[pos, lbl] in [['left','Izq.'],['right','Der.'],['top','Arriba'],['bottom','Abajo']]"
-                  :key="pos"
-                  class="vapor-btn"
-                  :class="{ 'vapor-btn--on': vaporPos === pos }"
-                  @click="setVaporPos(pos)"
-                >{{ lbl }}</button>
-              </div>
-            </div>
-
             <div class="layout-placeholder">
-              <div class="layout-preview" :class="`layout-preview--${vaporPos}`">
-                <div class="layout-preview__vapor">
-                  <span class="layout-preview__orb"/>
-                  <span class="layout-preview__vapor-label">VAPOR</span>
-                </div>
-                <div class="layout-preview__content">
-                  <div class="layout-preview__widget-mock"/>
-                  <div class="layout-preview__widget-mock"/>
-                </div>
-              </div>
               <span class="layout-placeholder__badge">PRÓXIMAMENTE</span>
               <span class="layout-placeholder__title">Editor de layout</span>
               <span class="layout-placeholder__sub">Arrastra zonas para colocar widgets, reloj, tiempo o el vapor donde quieras en la pantalla</span>
@@ -957,49 +916,6 @@ const widgetSubtitle = computed(() => {
 }
 
 /* ── Pantalla ──────────────────────────────────────── */
-.vapor-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px 40px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(255,255,255,.015);
-  flex-shrink: 0;
-}
-
-.vapor-row__icon { color: rgba(255,255,255,.25); flex-shrink: 0; }
-
-.vapor-row__label {
-  flex: 1;
-  font-size: var(--text-sm);
-  color: rgba(255,255,255,.45);
-}
-.vapor-row__label strong { color: rgba(255,255,255,.8); font-weight: 500; }
-
-.vapor-btns {
-  display: flex;
-  gap: 8px;
-}
-
-.vapor-btn {
-  padding: 8px 16px;
-  background: rgba(255,255,255,.04);
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 8px;
-  color: rgba(255,255,255,.4);
-  font-size: var(--text-sm);
-  font-family: var(--font);
-  cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s;
-  -webkit-tap-highlight-color: transparent;
-}
-.vapor-btn:hover { color: rgba(255,255,255,.7); border-color: rgba(255,255,255,.2); }
-.vapor-btn--on {
-  background: rgba(255,255,255,.09);
-  border-color: rgba(255,255,255,.28);
-  color: rgba(255,255,255,.9);
-}
-
 .layout-placeholder {
   flex: 1;
   display: flex;
@@ -1008,85 +924,6 @@ const widgetSubtitle = computed(() => {
   justify-content: center;
   gap: 16px;
   padding: 40px;
-}
-
-.layout-preview {
-  width: 380px;
-  height: 224px;
-  background: rgba(255,255,255,.025);
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 16px;
-  overflow: hidden;
-  display: flex;
-  opacity: .55;
-}
-
-.layout-preview--left  { flex-direction: row; }
-.layout-preview--right { flex-direction: row-reverse; }
-.layout-preview--top   { flex-direction: column; }
-.layout-preview--bottom { flex-direction: column-reverse; }
-
-.layout-preview__vapor {
-  background: rgba(255,255,255,.03);
-  border-color: rgba(255,255,255,.06);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.layout-preview--left .layout-preview__vapor,
-.layout-preview--right .layout-preview__vapor {
-  width: 110px;
-  border-right: 1px solid rgba(255,255,255,.06);
-}
-.layout-preview--right .layout-preview__vapor {
-  border-right: none;
-  border-left: 1px solid rgba(255,255,255,.06);
-}
-.layout-preview--top .layout-preview__vapor,
-.layout-preview--bottom .layout-preview__vapor {
-  height: 70px;
-  border-right: none;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-  flex-direction: row;
-  gap: 14px;
-}
-.layout-preview--bottom .layout-preview__vapor {
-  border-bottom: none;
-  border-top: 1px solid rgba(255,255,255,.06);
-}
-
-.layout-preview__orb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(196,181,253,.18);
-  border: 1px solid rgba(196,181,253,.35);
-  display: block;
-}
-
-.layout-preview__vapor-label {
-  font-size: 8px;
-  letter-spacing: .1em;
-  color: rgba(255,255,255,.2);
-}
-
-.layout-preview__content {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 16px;
-}
-
-.layout-preview__widget-mock {
-  width: 48px;
-  height: 62px;
-  border-radius: 8px;
-  background: rgba(255,165,45,.12);
-  border: 1px solid rgba(255,165,45,.22);
 }
 
 .layout-placeholder__badge {
