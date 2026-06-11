@@ -7,7 +7,11 @@ import ImageBlock    from './blocks/ImageBlock.vue'
 import CodeBlock     from './blocks/CodeBlock.vue'
 
 defineProps({
-  message: { type: Object, required: true },
+  message: {
+    type: Object,
+    required: true,
+    validator: m => ['user', 'assistant'].includes(m.role) && Array.isArray(m.blocks),
+  },
 })
 
 const BLOCK = {

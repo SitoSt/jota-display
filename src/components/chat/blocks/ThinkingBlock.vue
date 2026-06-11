@@ -1,3 +1,7 @@
+<script setup>
+defineOptions({ inheritAttrs: false })
+</script>
+
 <template>
   <div class="thinking-block">
     <span/><span/><span/>
