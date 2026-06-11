@@ -70,6 +70,14 @@ describe('useChat — sesión', () => {
     expect(session.value.messages[0].blocks[0].content).toBe('Hola')
   })
 
+  it('appendToken añade nuevo bloque si el último no es streaming', async () => {
+    const { useChat } = await freshChat()
+    const { session, pushMessage, appendToken } = useChat()
+    pushMessage('assistant', [{ type: 'text', content: 'fijo', streaming: false }])
+    appendToken('assistant', 'extra')
+    expect(session.value.messages[0].blocks).toHaveLength(2)
+  })
+
   it('showHistory y hideHistory cambian historyVisible', async () => {
     const { useChat } = await freshChat()
     const { historyVisible, showHistory, hideHistory } = useChat()

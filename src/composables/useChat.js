@@ -21,6 +21,7 @@ function _clearTimer() {
 
 function newSession() {
   _clearTimer()
+  isThinking.value = false
   session.value = makeSession()
   historyVisible.value = false
 }
@@ -44,7 +45,10 @@ function appendToken(role, text) {
   const last = msgs[msgs.length - 1]
   if (last?.role === role) {
     const lb = last.blocks[last.blocks.length - 1]
-    if (lb?.type === 'text' && lb.streaming) { lb.content += text; return }
+    if (lb?.type === 'text' && lb.streaming) {
+      last.blocks[last.blocks.length - 1] = { ...lb, content: lb.content + text }
+      return
+    }
     last.blocks.push({ type: 'text', content: text, streaming: true })
     return
   }
@@ -73,7 +77,6 @@ function _wireVoice() {
     }
 
     if (newSt === 'idle' && oldSt !== 'idle') {
-      isThinking.value = false
       _hideTimer = setTimeout(() => {
         historyVisible.value = false
         _hideTimer = null
