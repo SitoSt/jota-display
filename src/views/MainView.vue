@@ -5,13 +5,13 @@ import { useIdle } from '../composables/useIdle.js'
 import { useLayout } from '../composables/useLayout.js'
 import { applyTheme } from '../composables/useTheme.js'
 import IdleScreen from '../components/IdleScreen.vue'
-import Vapor from '../components/Vapor.vue'
+import VaporStrip from '../components/VaporStrip.vue'
 import Conversation from '../components/Conversation.vue'
 import WidgetGrid from '../widgets/WidgetGrid.vue'
 
 const { connectSSE, connectHA, current } = useVoice()
 const { loadIdle, idleActive, startIdleTimer, dismissIdle } = useIdle()
-const { layoutClass, loadLayout } = useLayout()
+const { loadLayout } = useLayout()
 
 const voiceActive = computed(() => current.value !== 'idle')
 
@@ -44,13 +44,11 @@ onMounted(async () => {
     </Transition>
 
     <Transition name="screen-fade">
-      <div v-if="!idleActive" class="home-layout" :class="layoutClass">
-        <div class="vapor-area">
-          <Vapor />
-        </div>
-        <div class="conversation-area">
+      <div v-if="!idleActive" class="home-layout">
+        <VaporStrip />
+        <div class="content-area">
           <Transition name="content-fade">
-            <Conversation v-if="voiceActive" class="conversation-area__transcript" />
+            <Conversation v-if="voiceActive" class="content-area__transcript" />
           </Transition>
           <WidgetGrid />
         </div>

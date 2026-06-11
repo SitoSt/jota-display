@@ -3,6 +3,9 @@
    Estos valores pueden ser sobreescritos por theme.json
    ═══════════════════════════════════════════════════════════ */
 :root {
+  /* Vapor strip */
+  --strip-h: 54px;
+
   /* Superficies — paleta C (claridad monocroma) */
   --bg:                   #0a0a0c;
   --surface:              #141418;
@@ -92,59 +95,18 @@ html, body {
   overflow: hidden;
 }
 
-/* Home screen: Vapor siempre visible + área de contenido */
 .home-layout {
   position: absolute;
   inset: 0;
   z-index: 1;
-  display: grid;
 }
 
-.home-layout.vapor-left {
-  grid-template-columns: clamp(160px, 30vw, 320px) 1fr;
-  grid-template-rows: 1fr;
-  grid-template-areas: "vapor conversation";
-}
-
-.home-layout.vapor-right {
-  grid-template-columns: 1fr clamp(160px, 30vw, 320px);
-  grid-template-rows: 1fr;
-  grid-template-areas: "conversation vapor";
-}
-
-.home-layout.vapor-top {
-  grid-template-columns: 1fr;
-  grid-template-rows: clamp(140px, 30vh, 260px) 1fr;
-  grid-template-areas:
-    "vapor"
-    "conversation";
-}
-
-.home-layout.vapor-bottom {
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr clamp(140px, 30vh, 260px);
-  grid-template-areas:
-    "conversation"
-    "vapor";
-}
-
-.home-layout.vapor-center {
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr 1fr;
-  grid-template-areas:
-    "vapor"
-    "conversation";
-}
-
-.vapor-area {
-  grid-area: vapor;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.conversation-area {
-  grid-area: conversation;
+.content-area {
+  position: absolute;
+  top: var(--strip-h, 54px);
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -153,8 +115,9 @@ html, body {
   gap: 1rem;
 }
 
-.conversation-area__transcript {
+.content-area__transcript {
   flex: 1;
+  min-height: 0;
 }
 
 /* Transición entre pantalla idle y home */
