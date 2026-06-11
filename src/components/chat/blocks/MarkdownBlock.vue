@@ -1,7 +1,3 @@
-<script setup>
-defineProps({ content: { type: String, default: '' } })
-</script>
-
 <template>
   <div class="md-block">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">

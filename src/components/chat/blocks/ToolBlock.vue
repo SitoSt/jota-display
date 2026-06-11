@@ -1,7 +1,7 @@
 <script setup>
 defineProps({
   toolName:   { type: String, default: 'tool' },
-  toolStatus: { type: String, default: 'running' },
+  toolStatus: { type: String, default: 'running', validator: v => ['running', 'done', 'error'].includes(v) },
 })
 </script>
 
