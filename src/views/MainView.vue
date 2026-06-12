@@ -1,26 +1,24 @@
 <script setup>
-import { computed, watch, onMounted } from 'vue'
+import { watch, onMounted } from 'vue'
 import { useVoice } from '../composables/useVoice.js'
 import { useIdle } from '../composables/useIdle.js'
 import { useLayout } from '../composables/useLayout.js'
+import { useChat } from '../composables/useChat.js'
 import { applyTheme } from '../composables/useTheme.js'
-import IdleScreen from '../components/IdleScreen.vue'
-import VaporStrip from '../components/VaporStrip.vue'
-import Conversation from '../components/Conversation.vue'
-import WidgetGrid from '../widgets/WidgetGrid.vue'
+import IdleScreen        from '../components/IdleScreen.vue'
+import VaporStrip        from '../components/VaporStrip.vue'
+import RichConversation  from '../components/chat/RichConversation.vue'
+import SessionControls   from '../components/chat/SessionControls.vue'
+import WidgetGrid        from '../widgets/WidgetGrid.vue'
 
 const { connectSSE, connectHA, current } = useVoice()
 const { loadIdle, idleActive, startIdleTimer, dismissIdle } = useIdle()
 const { loadLayout } = useLayout()
-
-const voiceActive = computed(() => current.value !== 'idle')
+const { historyVisible } = useChat()
 
 watch(current, (state) => {
-  if (state !== 'idle') {
-    dismissIdle()
-  } else {
-    startIdleTimer()
-  }
+  if (state !== 'idle') dismissIdle()
+  else startIdleTimer()
 })
 
 onMounted(async () => {
@@ -46,9 +44,10 @@ onMounted(async () => {
     <Transition name="screen-fade">
       <div v-if="!idleActive" class="home-layout">
         <VaporStrip />
+        <SessionControls />
         <div class="content-area">
           <Transition name="content-fade">
-            <Conversation v-if="voiceActive" class="content-area__transcript" />
+            <RichConversation v-if="historyVisible" class="content-area__transcript" />
           </Transition>
           <WidgetGrid />
         </div>
