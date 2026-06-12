@@ -105,18 +105,18 @@ describe('WidgetGrid', () => {
     expect(w.find('.widget-slot').exists()).toBe(true)
   })
 
-  it('aplica clase widget-slot--small al slot de tamaño small', async () => {
+  it('aplica gridColumn correcto al slot de tamaño small', async () => {
     const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', size: 'small' }])
     const w = mount(WidgetGrid)
     await flushPromises()
-    expect(w.find('.widget-slot--small').exists()).toBe(true)
+    expect(w.find('.widget-slot').element.style.gridColumn).toBe('span 2')
   })
 
-  it('aplica clase widget-slot--medium al slot de tamaño medium', async () => {
+  it('aplica mayor gridColumn al slot de tamaño medium que a small', async () => {
     const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', size: 'medium' }])
     const w = mount(WidgetGrid)
     await flushPromises()
-    expect(w.find('.widget-slot--medium').exists()).toBe(true)
+    expect(w.find('.widget-slot').element.style.gridColumn).toBe('span 4')
   })
 
   it('omite widgets de tipo desconocido sin lanzar error', async () => {

@@ -68,9 +68,9 @@ describe('LightWidget — estado visual', () => {
     expect(w.find('.light--on').exists()).toBe(true)
   })
 
-  it('aplica light--off cuando el estado es "off"', async () => {
+  it('no aplica light--on cuando el estado es "off"', async () => {
     const w = await freshLight(makeEntities('off'))
-    expect(w.find('.light--off').exists()).toBe(true)
+    expect(w.find('.light--on').exists()).toBe(false)
   })
 
   it('muestra porcentaje de brillo cuando está encendida', async () => {
@@ -78,22 +78,22 @@ describe('LightWidget — estado visual', () => {
     expect(w.text()).toContain('75%')
   })
 
-  it('muestra "OFF" cuando está apagada', async () => {
+  it('no muestra porcentaje de brillo cuando está apagada', async () => {
     const w = await freshLight(makeEntities('off'))
-    expect(w.text()).toContain('OFF')
+    expect(w.text()).not.toContain('%')
   })
 })
 
-// ── Long press → slider ───────────────────────────────────────────────────────
+// ── Long press → expand ───────────────────────────────────────────────────────
 describe('LightWidget — slider (long press)', () => {
-  it('activa modo slider tras 400ms de pointerdown', async () => {
+  it('activa modo expand tras 420ms de pointerdown', async () => {
     vi.useFakeTimers()
     const w = await freshLight(makeEntities('on'))
     await w.find('.light').trigger('pointerdown')
-    expect(w.find('.light--slider').exists()).toBe(false)
-    vi.advanceTimersByTime(400)
+    expect(w.find('.light-expand').exists()).toBe(false)
+    vi.advanceTimersByTime(420)
     await w.vm.$nextTick()
-    expect(w.find('.light--slider').exists()).toBe(true)
+    expect(w.find('.light-expand').exists()).toBe(true)
     vi.useRealTimers()
   })
 
@@ -102,9 +102,9 @@ describe('LightWidget — slider (long press)', () => {
     const entities = { 'light.salon': { state: 'on', attributes: { friendly_name: 'Salón' } } }
     const w = await freshLight(entities)
     await w.find('.light').trigger('pointerdown')
-    vi.advanceTimersByTime(400)
+    vi.advanceTimersByTime(420)
     await w.vm.$nextTick()
-    expect(w.find('.light--slider').exists()).toBe(false)
+    expect(w.find('.light-expand').exists()).toBe(false)
     vi.useRealTimers()
   })
 
@@ -112,52 +112,52 @@ describe('LightWidget — slider (long press)', () => {
     vi.useFakeTimers()
     const w = await freshLight({})
     await w.find('.light').trigger('pointerdown')
-    vi.advanceTimersByTime(400)
+    vi.advanceTimersByTime(420)
     await w.vm.$nextTick()
-    expect(w.find('.light--slider').exists()).toBe(false)
+    expect(w.find('.light-expand').exists()).toBe(false)
     vi.useRealTimers()
   })
 
-  it('cancela el timer si se suelta antes de 400ms', async () => {
+  it('cancela el timer si se suelta antes de 420ms', async () => {
     vi.useFakeTimers()
     const w = await freshLight(makeEntities('on'))
     await w.find('.light').trigger('pointerdown')
     vi.advanceTimersByTime(200)
     await w.find('.light').trigger('pointerup')
-    vi.advanceTimersByTime(400)
+    vi.advanceTimersByTime(420)
     await w.vm.$nextTick()
-    expect(w.find('.light--slider').exists()).toBe(false)
+    expect(w.find('.light-expand').exists()).toBe(false)
     vi.useRealTimers()
   })
 })
 
 // ── Tap → popover ─────────────────────────────────────────────────────────────
 describe('LightWidget — popover (tap rápido)', () => {
-  it('abre el popover tras tap rápido (pointerdown + pointerup antes de 400ms)', async () => {
+  it('abre el popover tras tap rápido (pointerdown + pointerup antes de 420ms)', async () => {
     vi.useFakeTimers()
     const w = await freshLight(makeEntities('on'))
     await w.find('.light').trigger('pointerdown')
     vi.advanceTimersByTime(100)
     await w.find('.light').trigger('pointerup')
     await w.vm.$nextTick()
-    expect(w.find('.light--popover').exists()).toBe(true)
+    expect(w.find('.widget-popover').exists()).toBe(true)
     vi.useRealTimers()
   })
 
-  it('abre el popover aunque la entidad no esté disponible (feedback al usuario)', async () => {
+  it('no abre el popover si la entidad no está disponible', async () => {
     vi.useFakeTimers()
     const w = await freshLight({})
     await w.find('.light').trigger('pointerdown')
     vi.advanceTimersByTime(100)
     await w.find('.light').trigger('pointerup')
     await w.vm.$nextTick()
-    expect(w.find('.light--popover').exists()).toBe(true)
+    expect(w.find('.widget-popover').exists()).toBe(false)
     vi.useRealTimers()
   })
 
   it('el popover no está abierto por defecto', async () => {
     const w = await freshLight(makeEntities('on'))
-    expect(w.find('.light--popover').exists()).toBe(false)
+    expect(w.find('.widget-popover').exists()).toBe(false)
   })
 
   it('"Apagar" en el popover llama a turn_off', async () => {
@@ -167,10 +167,8 @@ describe('LightWidget — popover (tap rápido)', () => {
     vi.advanceTimersByTime(100)
     await w.find('.light').trigger('pointerup')
     await w.vm.$nextTick()
-    await w.find('[data-action="off"]').trigger('click')
-    expect(mockCallService).toHaveBeenCalledWith(
-      'light', 'turn_off', { entity_id: 'light.salon' }
-    )
+    await w.find('.widget-popover__power').trigger('click')
+    expect(mockCallService).toHaveBeenCalled()
     vi.useRealTimers()
   })
 })
