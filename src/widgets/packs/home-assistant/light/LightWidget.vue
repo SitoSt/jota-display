@@ -32,10 +32,9 @@ const rgbStr = computed(() => rgb.value.join(','))
 const widgetStyle = computed(() => {
   if (!isOn.value || isUnavail.value) return {}
   return {
-    '--rgb':        rgbStr.value,
-    '--brightness': brightness.value + '%',
-    borderColor:    `rgba(${rgbStr.value},0.45)`,
-    boxShadow:      `0 0 45px rgba(${rgbStr.value},0.18), inset 0 1px 0 rgba(${rgbStr.value},0.08)`,
+    '--rgb':     rgbStr.value,
+    borderColor: `rgba(${rgbStr.value},0.45)`,
+    boxShadow:   `0 0 45px rgba(${rgbStr.value},0.18), inset 0 1px 0 rgba(${rgbStr.value},0.08)`,
   }
 })
 
@@ -203,46 +202,49 @@ const popoverStyle = computed(() => ({
   <div
     ref="widgetRef"
     class="light"
-    :class="{ 'light--on': isOn && !isUnavail, 'light--horizontal': size === 'horizontal' }"
+    :class="{ 'light--on': isOn && !isUnavail }"
     :style="widgetStyle"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
     @pointercancel="onPointerCancel"
   >
-    <!-- Fill de brillo (sube desde abajo con el color de la luz) -->
-    <div v-if="isOn && !isUnavail" class="light__fill" />
+    <!-- Zona interior: icono + textos -->
+    <div class="light__inner">
+      <div class="light__icon"
+        @pointerdown.stop
+        @pointerup.stop="onIconTap"
+        @pointercancel.stop
+      >
+        <svg width="17" height="17" viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="10" r="5.5"
+            :fill="isOn && !isUnavail ? `rgba(${rgbStr},0.55)` : 'rgba(255,255,255,0.08)'"
+            :stroke="isOn && !isUnavail ? `rgba(${rgbStr},0.9)` : 'rgba(255,255,255,0.35)'"
+            stroke-width="1.3"/>
+          <line x1="11" y1="16" x2="11" y2="19"
+            :stroke="isOn && !isUnavail ? `rgba(${rgbStr},0.6)` : 'rgba(255,255,255,0.22)'"
+            stroke-width="1.3" stroke-linecap="round"/>
+          <line x1="9" y1="19" x2="13" y2="19"
+            :stroke="isOn && !isUnavail ? `rgba(${rgbStr},0.6)` : 'rgba(255,255,255,0.22)'"
+            stroke-width="1.3" stroke-linecap="round"/>
+          <line v-if="isUnavail"
+            x1="4" y1="4" x2="18" y2="18"
+            stroke="rgba(255,255,255,0.35)" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
 
-    <!-- Icono bombilla — tap directo enciende/apaga -->
-    <div class="light__icon"
-      @pointerdown.stop
-      @pointerup.stop="onIconTap"
-      @pointercancel.stop
-    >
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
-          :fill="isOn && !isUnavail
-            ? `rgba(${rgbStr},${brightness / 100 * 0.55 + 0.1})`
-            : 'rgba(255,255,255,0.10)'"
-          :stroke="isOn && !isUnavail
-            ? `rgba(${rgbStr},0.9)`
-            : 'rgba(255,255,255,0.50)'"
-          stroke-width="1.4"
-          stroke-linejoin="round"
-        />
-        <!-- Línea de tachado cuando está apagada -->
-        <line
-          v-if="!isOn && !isUnavail"
-          x1="4" y1="4" x2="20" y2="20"
-          stroke="rgba(255,255,255,0.50)"
-          stroke-width="1.5"
-          stroke-linecap="round"
-        />
-      </svg>
+      <div class="light__texts">
+        <span class="light__label">{{ label }}</span>
+        <span v-if="isOn && !isUnavail" class="light__value">{{ brightness }}%</span>
+        <span v-if="isUnavail" class="light__offline">offline</span>
+      </div>
     </div>
 
-    <div v-if="isOn && !isUnavail" class="light__value">{{ brightness }}%</div>
-    <div class="light__label">{{ label }}</div>
+    <!-- Barra de brillo: solo cuando encendida y disponible -->
+    <div v-if="isOn && !isUnavail" class="light__bar-zone">
+      <div class="light__bar-track">
+        <div class="light__bar-fill" :style="{ width: brightness + '%' }" />
+      </div>
+    </div>
 
     <!-- ── Expand overlay (pulsación larga) ─────────── -->
     <Teleport to="body">
@@ -339,11 +341,8 @@ const popoverStyle = computed(() => ({
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  padding: 18px 12px 15px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
   cursor: pointer;
   user-select: none;
   touch-action: none;
@@ -353,112 +352,95 @@ const popoverStyle = computed(() => ({
     box-shadow   var(--dur-normal) var(--ease-out);
 }
 
-/* Fill que sube desde abajo */
-.light__fill {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: var(--brightness, 0%);
-  background: linear-gradient(
-    to top,
-    rgba(var(--rgb, 255,165,45), .32) 0%,
-    rgba(var(--rgb, 255,165,45), .06) 100%
-  );
-  pointer-events: none;
-  border-radius: 0 0 20px 20px;
-  transition: height var(--dur-slow) var(--ease-out);
+/* ── Zona interior: icono + textos ──────────────────── */
+.light__inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  flex: 1;
+  min-height: 0;
 }
 
-/* Icono — botón circular */
+/* ── Icono ──────────────────────────────────────────── */
 .light__icon {
-  position: relative;
-  z-index: 1;
-  width: 48px;
-  height: 48px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: auto;
-  margin-top: 2px;
-  background: rgba(255,255,255,0.08);
-  transition:
-    background    var(--dur-normal) var(--ease-out),
-    filter        var(--dur-normal) var(--ease-out),
-    box-shadow    var(--dur-normal) var(--ease-out);
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.07);
   cursor: pointer;
+  transition:
+    background var(--dur-normal) var(--ease-out),
+    box-shadow  var(--dur-normal) var(--ease-out),
+    filter      var(--dur-normal) var(--ease-out);
 }
 
 .light--on .light__icon {
   background: rgba(var(--rgb, 255,165,45), 0.18);
   box-shadow: 0 0 14px rgba(var(--rgb, 255,165,45), 0.30);
-  filter: drop-shadow(0 0 6px rgba(var(--rgb, 255,165,45), .45));
+  filter: drop-shadow(0 0 5px rgba(var(--rgb, 255,165,45), .40));
 }
 
-/* Valor */
-.light__value {
-  position: relative;
-  z-index: 1;
-  font-size: var(--text-sm);
-  font-weight: 300;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  color: rgba(255,255,255,0.55);
-  transition: color var(--dur-normal) var(--ease-out);
+/* ── Textos ─────────────────────────────────────────── */
+.light__texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
 }
 
-.light--on .light__value {
-  color: rgb(var(--rgb, 255,200,75));
-}
-
-/* Etiqueta */
 .light__label {
-  position: relative;
-  z-index: 1;
   font-size: var(--text-xs);
-  font-weight: 500;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.40);
+  color: rgba(255,255,255,0.28);
+  line-height: 1;
   transition: color var(--dur-normal) var(--ease-out);
 }
 
 .light--on .light__label {
-  color: rgba(var(--rgb, 255,165,45), 0.55);
+  color: rgba(var(--rgb, 255,165,45), 0.50);
 }
 
-/* ── Layout horizontal ───────────────────────────── */
-.light--horizontal {
-  padding: 0 18px;
-  flex-direction: row;
-  align-items: center;
-  gap: 14px;
+.light__value {
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1;
+  color: rgba(var(--rgb, 255,165,45), 0.80);
 }
 
-.light--horizontal .light__fill {
-  top: 0;
-  right: auto;
+.light__offline {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.22);
+  line-height: 1;
+}
+
+/* ── Barra de brillo ────────────────────────────────── */
+.light__bar-zone {
+  padding: 0 10px 9px;
+}
+
+.light__bar-track {
+  width: 100%;
+  height: 12px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.light__bar-fill {
   height: 100%;
-  width: var(--brightness, 0%);
-  background: linear-gradient(
-    to right,
-    rgba(var(--rgb, 255,165,45), .32) 0%,
-    rgba(var(--rgb, 255,165,45), .06) 100%
-  );
-  border-radius: 20px 0 0 20px;
+  border-radius: 4px;
+  background: rgb(var(--rgb, 255,165,45));
   transition: width var(--dur-slow) var(--ease-out);
-}
-
-.light--horizontal .light__icon {
-  margin-bottom: 0;
-  margin-top: 0;
-  flex-shrink: 0;
-}
-
-.light--horizontal .light__value {
-  font-size: var(--text-base);
-}
-
-.light--horizontal .light__label {
-  margin-left: auto;
 }
 </style>

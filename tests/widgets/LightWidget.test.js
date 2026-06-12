@@ -172,3 +172,50 @@ describe('LightWidget — popover (tap rápido)', () => {
     vi.useRealTimers()
   })
 })
+
+// ── Barra de brillo ───────────────────────────────────────────────────────────
+describe('LightWidget — barra de brillo', () => {
+  it('muestra la barra cuando la luz está encendida', async () => {
+    const w = await freshLight(makeEntities('on'))
+    expect(w.find('.light__bar-zone').exists()).toBe(true)
+  })
+
+  it('no muestra la barra cuando la luz está apagada', async () => {
+    const w = await freshLight(makeEntities('off'))
+    expect(w.find('.light__bar-zone').exists()).toBe(false)
+  })
+
+  it('no muestra la barra cuando la entidad no está disponible', async () => {
+    const w = await freshLight({})
+    expect(w.find('.light__bar-zone').exists()).toBe(false)
+  })
+
+  it('el ancho del fill refleja el porcentaje de brillo', async () => {
+    const w = await freshLight(makeEntities('on'))  // brightness: 191 → 75%
+    const fill = w.find('.light__bar-fill')
+    expect(fill.attributes('style')).toContain('75%')
+  })
+})
+
+// ── Estado offline ────────────────────────────────────────────────────────────
+describe('LightWidget — estado unavailable/offline', () => {
+  it('muestra texto "offline" cuando la entidad no está disponible', async () => {
+    const w = await freshLight({})
+    expect(w.text()).toContain('offline')
+  })
+
+  it('no muestra texto "offline" cuando la luz está encendida', async () => {
+    const w = await freshLight(makeEntities('on'))
+    expect(w.text()).not.toContain('offline')
+  })
+
+  it('no muestra texto "offline" cuando la luz está apagada', async () => {
+    const w = await freshLight(makeEntities('off'))
+    expect(w.text()).not.toContain('offline')
+  })
+
+  it('no muestra porcentaje cuando la entidad no está disponible', async () => {
+    const w = await freshLight({})
+    expect(w.text()).not.toContain('%')
+  })
+})
