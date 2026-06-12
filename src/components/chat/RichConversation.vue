@@ -28,19 +28,18 @@ watch(isThinking, (v) => { if (v) { userScrolled = false; scrollToBottom() } })
 <template>
   <div class="rich-conv">
     <div class="rich-conv__scroll" ref="scrollEl" @scroll.passive="onScroll">
-      <div class="rich-conv__messages">
-        <Transition
+      <TransitionGroup
+        tag="div"
+        class="rich-conv__messages"
+        name="bubble"
+      >
+        <MessageBubble
           v-for="msg in session.messages"
           :key="msg.id"
-          name="bubble"
-          appear
-        >
-          <MessageBubble :message="msg" />
-        </Transition>
-        <Transition name="dots">
-          <ThinkingBlock v-if="isThinking" />
-        </Transition>
-      </div>
+          :message="msg"
+        />
+        <ThinkingBlock v-if="isThinking" key="thinking" />
+      </TransitionGroup>
     </div>
   </div>
 </template>
