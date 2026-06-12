@@ -83,7 +83,4 @@ watch(isThinking, (v) => { if (v) { userScrolled = false; scrollToBottom() } })
 .bubble-leave-active { transition: opacity var(--dur-normal) var(--ease-in); }
 .bubble-enter-from   { opacity: 0; transform: translateY(12px); }
 .bubble-leave-to     { opacity: 0; }
-
-.dots-enter-active, .dots-leave-active { transition: opacity var(--dur-normal) var(--ease-in-out); }
-.dots-enter-from, .dots-leave-to       { opacity: 0; }
 </style>

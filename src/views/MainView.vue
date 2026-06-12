@@ -46,9 +46,7 @@ onMounted(async () => {
         <VaporStrip />
         <SessionControls />
         <div class="content-area">
-          <Transition name="content-fade">
-            <RichConversation v-show="historyVisible" class="content-area__transcript" />
-          </Transition>
+          <RichConversation v-show="historyVisible" class="content-area__transcript" />
           <WidgetGrid />
         </div>
       </div>
