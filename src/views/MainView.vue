@@ -47,7 +47,7 @@ onMounted(async () => {
         <SessionControls />
         <div class="content-area">
           <Transition name="content-fade">
-            <RichConversation v-if="historyVisible" class="content-area__transcript" />
+            <RichConversation v-show="historyVisible" class="content-area__transcript" />
           </Transition>
           <WidgetGrid />
         </div>
