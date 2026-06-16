@@ -6,7 +6,8 @@ import { entityToRgb } from './lightColor.js'
 
 const props = defineProps({
   config:    { type: Object, required: true },
-  size:      { type: String, default: 'small' },
+  widthPx:   { type: Number, default: 0 },
+  heightPx:  { type: Number, default: 0 },
   mockState: { type: Object, default: null },
 })
 
@@ -31,6 +32,8 @@ const hasBrightness = computed(() => state.value?.attributes?.brightness != null
 
 const rgb    = computed(() => entityToRgb(state.value))
 const rgbStr = computed(() => rgb.value.join(','))
+
+const showLabel = computed(() => props.heightPx >= 100)
 
 const widgetStyle = computed(() => {
   if (!isOn.value || isUnavail.value) return {}
@@ -205,7 +208,7 @@ const popoverStyle = computed(() => ({
   <div
     ref="widgetRef"
     class="light"
-    :class="{ 'light--on': isOn && !isUnavail, 'light--horizontal': size === 'horizontal' }"
+    :class="{ 'light--on': isOn && !isUnavail, 'light--horizontal': widthPx > heightPx && heightPx > 0 }"
     :style="widgetStyle"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
@@ -236,7 +239,7 @@ const popoverStyle = computed(() => ({
       </div>
 
       <div class="light__texts">
-        <span class="light__label">{{ label }}</span>
+        <span v-if="showLabel" class="light__label">{{ label }}</span>
         <span v-if="isOn && !isUnavail" class="light__value">{{ brightness }}%</span>
         <span v-if="isUnavail" class="light__offline">offline</span>
       </div>

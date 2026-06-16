@@ -19,7 +19,12 @@ function makeEntities(state = 'on', extras = {}) {
   }
 }
 
-async function freshLight(entities = makeEntities(), config = { entity: 'light.salon', type: 'home-assistant:light' }, size = 'small') {
+async function freshLight(
+  entities = makeEntities(),
+  config = { entity: 'light.salon', type: 'home-assistant:light' },
+  widthPx = 240,
+  heightPx = 180
+) {
   vi.resetModules()
   mockCallService.mockReset()
 
@@ -36,7 +41,7 @@ async function freshLight(entities = makeEntities(), config = { entity: 'light.s
     '../../src/widgets/packs/home-assistant/light/LightWidget.vue'
   )
   return mount(LightWidget, {
-    props:  { config, size },
+    props:  { config, widthPx, heightPx },
     global: { stubs: { Teleport: true } },
   })
 }
@@ -217,5 +222,17 @@ describe('LightWidget — estado unavailable/offline', () => {
   it('no muestra porcentaje cuando la entidad no está disponible', async () => {
     const w = await freshLight({})
     expect(w.text()).not.toContain('%')
+  })
+})
+
+describe('LightWidget — renderizado adaptativo', () => {
+  it('oculta el label cuando heightPx < 100', async () => {
+    const w = await freshLight(makeEntities(), undefined, 240, 80)
+    expect(w.find('.light__label').exists()).toBe(false)
+  })
+
+  it('muestra el label cuando heightPx >= 100', async () => {
+    const w = await freshLight(makeEntities(), undefined, 240, 100)
+    expect(w.find('.light__label').exists()).toBe(true)
   })
 })
