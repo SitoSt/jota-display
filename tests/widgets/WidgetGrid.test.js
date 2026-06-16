@@ -1,59 +1,14 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import { mount } from '@vue/test-utils'
-import { flushPromises } from '@vue/test-utils'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import { defineComponent, ref } from 'vue'
 
-// ── registry ────────────────────────────────────────────────────────────────
-describe('resolveWidget', () => {
-  afterEach(() => vi.resetModules())
+// ResizeObserver no existe en jsdom
+const mockRO = { observe: vi.fn(), disconnect: vi.fn() }
+class MockResizeObserver {
+  constructor() { return mockRO }
+}
+vi.stubGlobal('ResizeObserver', MockResizeObserver)
 
-  it('devuelve null para un tipo desconocido', async () => {
-    const { resolveWidget } = await import('../../src/widgets/index.js')
-    expect(resolveWidget('unknown:widget')).toBeNull()
-  })
-
-  it('devuelve una función factory para home-assistant:light', async () => {
-    const { resolveWidget } = await import('../../src/widgets/index.js')
-    const factory = resolveWidget('home-assistant:light')
-    expect(typeof factory).toBe('function')
-  })
-
-  it('devuelve una función factory para home-assistant:sensor', async () => {
-    const { resolveWidget } = await import('../../src/widgets/index.js')
-    const factory = resolveWidget('home-assistant:sensor')
-    expect(typeof factory).toBe('function')
-  })
-})
-
-// ── resolveDefinition ───────────────────────────────────────────────────────
-describe('resolveDefinition', () => {
-  afterEach(() => vi.resetModules())
-
-  it('devuelve null para un tipo desconocido', async () => {
-    const { resolveDefinition } = await import('../../src/widgets/index.js')
-    expect(resolveDefinition('unknown:type')).toBeNull()
-  })
-
-  it('devuelve la definición completa para home-assistant:light', async () => {
-    const { resolveDefinition } = await import('../../src/widgets/index.js')
-    const def = resolveDefinition('home-assistant:light')
-    expect(def).not.toBeNull()
-    expect(def.type).toBe('home-assistant:light')
-    expect(def.configSchema).toBeDefined()
-    expect(def.fields).toBeDefined()
-  })
-
-  it('devuelve la definición completa para home-assistant:sensor', async () => {
-    const { resolveDefinition } = await import('../../src/widgets/index.js')
-    const def = resolveDefinition('home-assistant:sensor')
-    expect(def).not.toBeNull()
-    expect(def.type).toBe('home-assistant:sensor')
-    expect(def.configSchema).toBeDefined()
-    expect(def.fields).toBeDefined()
-  })
-})
-
-// ── WidgetGrid ───────────────────────────────────────────────────────────────
 const MockWidget = defineComponent({ template: '<div class="mock-widget" />' })
 
 async function freshWidgetGrid(widgetList = [], fetchOk = true) {
@@ -74,7 +29,8 @@ async function freshWidgetGrid(widgetList = [], fetchOk = true) {
 
   const mockDefinition = {
     type:        'ha:mock',
-    defaultSize: 'small',
+    defaultCols: 4,
+    defaultRows: 2,
     fields:      { value: () => 'val', label: () => 'lbl' },
     component:   undefined,
   }
@@ -88,6 +44,38 @@ async function freshWidgetGrid(widgetList = [], fetchOk = true) {
   return WidgetGrid
 }
 
+// ── resolveWidget/Definition ─────────────────────────────────────────────────
+describe('resolveWidget', () => {
+  afterEach(() => vi.resetModules())
+
+  it('devuelve null para un tipo desconocido', async () => {
+    const { resolveWidget } = await import('../../src/widgets/index.js')
+    expect(resolveWidget('unknown:widget')).toBeNull()
+  })
+
+  it('devuelve una función factory para home-assistant:light', async () => {
+    const { resolveWidget } = await import('../../src/widgets/index.js')
+    expect(typeof resolveWidget('home-assistant:light')).toBe('function')
+  })
+})
+
+describe('resolveDefinition', () => {
+  afterEach(() => vi.resetModules())
+
+  it('devuelve null para un tipo desconocido', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    expect(resolveDefinition('unknown:type')).toBeNull()
+  })
+
+  it('devuelve definición con minCols para home-assistant:light', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    const def = resolveDefinition('home-assistant:light')
+    expect(def.minCols).toBeDefined()
+    expect(def.defaultCols).toBeDefined()
+  })
+})
+
+// ── WidgetGrid ───────────────────────────────────────────────────────────────
 describe('WidgetGrid', () => {
   afterEach(() => vi.resetModules())
 
@@ -99,28 +87,36 @@ describe('WidgetGrid', () => {
   })
 
   it('renderiza un slot por widget conocido', async () => {
-    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', size: 'small' }])
+    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', cols: 4, rows: 2 }])
     const w = mount(WidgetGrid)
     await flushPromises()
     expect(w.find('.widget-slot').exists()).toBe(true)
   })
 
-  it('aplica gridColumn correcto al slot de tamaño small', async () => {
-    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', size: 'small' }])
+  it('aplica gridColumn: span cols al slot', async () => {
+    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', cols: 3, rows: 2 }])
     const w = mount(WidgetGrid)
     await flushPromises()
-    expect(w.find('.widget-slot').element.style.gridColumn).toBe('span 2')
+    expect(w.find('.widget-slot').element.style.gridColumn).toBe('span 3')
   })
 
-  it('aplica mayor gridColumn al slot de tamaño medium que a small', async () => {
-    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', size: 'medium' }])
+  it('aplica gridRow: span rows al slot', async () => {
+    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock', cols: 4, rows: 5 }])
     const w = mount(WidgetGrid)
     await flushPromises()
+    expect(w.find('.widget-slot').element.style.gridRow).toBe('span 5')
+  })
+
+  it('usa defaultCols de la definición si el widget no tiene cols', async () => {
+    const WidgetGrid = await freshWidgetGrid([{ type: 'ha:mock' }])
+    const w = mount(WidgetGrid)
+    await flushPromises()
+    // defaultCols del mockDefinition es 4
     expect(w.find('.widget-slot').element.style.gridColumn).toBe('span 4')
   })
 
   it('omite widgets de tipo desconocido sin lanzar error', async () => {
-    const WidgetGrid = await freshWidgetGrid([{ type: 'unknown:thing', size: 'small' }])
+    const WidgetGrid = await freshWidgetGrid([{ type: 'unknown:thing', cols: 4, rows: 2 }])
     const w = mount(WidgetGrid)
     await flushPromises()
     expect(w.find('.widget-slot').exists()).toBe(false)

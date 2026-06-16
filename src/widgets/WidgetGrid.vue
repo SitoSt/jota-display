@@ -1,52 +1,72 @@
 <!-- src/widgets/WidgetGrid.vue -->
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { resolveDefinition } from './index.js'
 import { useWidgets } from '../composables/useWidgets.js'
 import { useGridConfig } from '../composables/useGridConfig.js'
 import WidgetShell from './WidgetShell.vue'
 
 const { widgets } = useWidgets()
-const { cellPx, gridCols, gridGap } = useGridConfig()
+const { totalCols, rowHeight, gridGap } = useGridConfig()
 
-const SPANS = {
-  small:      [2, 2],
-  horizontal: [2, 1],
-  medium:     [4, 2],
-  large:      [99, 2],
-}
+const gridEl = ref(null)
+const containerWidth = ref(0)
+let _ro = null
+
+onMounted(() => {
+  _ro = new ResizeObserver(entries => {
+    containerWidth.value = entries[0].contentRect.width
+  })
+  if (gridEl.value) _ro.observe(gridEl.value)
+})
+onUnmounted(() => _ro?.disconnect())
+
+const columnWidth = computed(() => {
+  const cols = totalCols.value
+  const gap  = gridGap.value
+  const w    = containerWidth.value
+  if (!w || !cols) return 60
+  return (w - (cols - 1) * gap) / cols
+})
 
 const slots = computed(() =>
   widgets.value
     .map(w => {
       const def = resolveDefinition(w.type)
       if (!def) return null
-      const size = w.size || def.defaultSize || 'small'
-      const [col, row] = SPANS[size] ?? [2, 2]
-      return { config: w, def, colSpan: Math.min(col, gridCols.value), rowSpan: row }
+      const cols = w.cols ?? def.defaultCols ?? 4
+      const rows = w.rows ?? def.defaultRows ?? 2
+      const widthPx  = cols * columnWidth.value + (cols - 1) * gridGap.value
+      const heightPx = rows * rowHeight.value  + (rows - 1) * gridGap.value
+      return { config: w, def, cols, rows, widthPx, heightPx }
     })
     .filter(Boolean)
 )
 
 const gridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${gridCols.value}, ${cellPx.value}px)`,
-  gridAutoRows:        `${cellPx.value}px`,
+  gridTemplateColumns: `repeat(${totalCols.value}, 1fr)`,
+  gridAutoRows:        `${rowHeight.value}px`,
   gap:                 `${gridGap.value}px`,
 }))
 </script>
 
 <template>
-  <div v-if="slots.length" class="widget-grid" :style="gridStyle">
+  <div v-if="slots.length" ref="gridEl" class="widget-grid" :style="gridStyle">
     <div
       v-for="(slot, i) in slots"
       :key="slot.config.id ?? i"
       class="widget-slot"
       :style="{
-        gridColumn: `span ${slot.colSpan}`,
-        gridRow:    `span ${slot.rowSpan}`,
+        gridColumn: `span ${slot.cols}`,
+        gridRow:    `span ${slot.rows}`,
       }"
     >
-      <WidgetShell :config="slot.config" :definition="slot.def" />
+      <WidgetShell
+        :config="slot.config"
+        :definition="slot.def"
+        :width-px="slot.widthPx"
+        :height-px="slot.heightPx"
+      />
     </div>
   </div>
 </template>
