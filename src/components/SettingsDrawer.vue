@@ -23,7 +23,7 @@ const selectedWidgetId  = ref(null)
 
 const { config, loadIdle, saveIdle } = useIdle()
 const { widgets, removeWidget, updateWidget, reorderWidgets } = useWidgets()
-const { cellPx, gridCols, gridGap, setCellPx, setCols, setGap } = useGridConfig()
+const { totalCols, rowHeight, gridGap, setTotalCols, setRowHeight, setGap } = useGridConfig()
 const { connected, entities } = useHA()
 
 const { url: haUrl, saveHAConfig, loadHAConfig }                                    = useHAConfig()
@@ -44,16 +44,16 @@ function onDeviceFullyUrlBlur(e) {
   if (val !== deviceFullyUrl.value) saveDeviceConfig({ fully: { url: val } })
 }
 
-// Mapping de spans (igual que WidgetGrid)
-const SPANS = { small: [2,2], horizontal: [2,1], medium: [4,2], large: [99,2] }
-function spanStyle(size) {
-  const [col, row] = SPANS[size] ?? [2,2]
-  return { gridColumn: `span ${Math.min(col, gridCols.value)}`, gridRow: `span ${row}` }
+function spanStyle(widget) {
+  return {
+    gridColumn: `span ${Math.min(widget.cols ?? 4, totalCols.value)}`,
+    gridRow:    `span ${widget.rows ?? 2}`,
+  }
 }
 
 const tableroGridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${gridCols.value}, ${cellPx.value}px)`,
-  gridAutoRows:        `${cellPx.value}px`,
+  gridTemplateColumns: `repeat(${totalCols.value}, 1fr)`,
+  gridAutoRows:        `${rowHeight.value}px`,
   gap:                 `${gridGap.value}px`,
 }))
 
@@ -133,7 +133,6 @@ const timeoutOptions = [
   { value: 0,   label: 'Nunca'  },
 ]
 
-const SIZE_LABELS = { small: 'Compact.', horizontal: 'Horiz.' }
 
 const catalogTypes      = computed(() => Object.values(registry))
 const widgetDefs        = computed(() =>
@@ -264,6 +263,22 @@ const widgetSubtitle = computed(() => {
                 </div>
                 <div class="tile__title">Sistema</div>
                 <div class="tile__sub">Información de la aplicación,<br>versión y estado</div>
+                <span class="tile__arrow">›</span>
+              </button>
+
+              <button class="tile tile--logs" @click="openSection('logs')">
+                <div class="tile__glow"/>
+                <div class="tile__icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <line x1="11" y1="9" x2="8" y2="9"/>
+                  </svg>
+                </div>
+                <div class="tile__title">Logs</div>
+                <div class="tile__sub">Registro de actividad<br>y diagnóstico</div>
                 <span class="tile__arrow">›</span>
               </button>
             </div>
@@ -462,20 +477,19 @@ const widgetSubtitle = computed(() => {
               <!-- Config de rejilla -->
               <div class="grid-cfg">
                 <div class="grid-cfg-row">
-                  <span class="grid-cfg__label">Por fila</span>
-                  <div class="grid-cfg__pills">
-                    <button v-for="n in [2, 3, 4]" :key="n"
-                      class="grid-pill"
-                      :class="{ 'grid-pill--on': gridCols === n * 2 }"
-                      @click="setCols(n * 2)">{{ n }}</button>
+                  <span class="grid-cfg__label">Columnas</span>
+                  <div class="grid-stepper">
+                    <button class="grid-stepper__btn" @click="setTotalCols(totalCols - 1)">−</button>
+                    <span class="grid-stepper__val">{{ totalCols }}</span>
+                    <button class="grid-stepper__btn" @click="setTotalCols(totalCols + 1)">+</button>
                   </div>
                 </div>
                 <div class="grid-cfg-row">
-                  <span class="grid-cfg__label">Tamaño</span>
+                  <span class="grid-cfg__label">Alto fila</span>
                   <div class="grid-stepper">
-                    <button class="grid-stepper__btn" @click="setCellPx(cellPx - 5)">−</button>
-                    <span class="grid-stepper__val">{{ cellPx }}px</span>
-                    <button class="grid-stepper__btn" @click="setCellPx(cellPx + 5)">+</button>
+                    <button class="grid-stepper__btn" @click="setRowHeight(rowHeight - 5)">−</button>
+                    <span class="grid-stepper__val">{{ rowHeight }}px</span>
+                    <button class="grid-stepper__btn" @click="setRowHeight(rowHeight + 5)">+</button>
                   </div>
                 </div>
                 <div class="grid-cfg-row">
@@ -527,7 +541,7 @@ const widgetSubtitle = computed(() => {
                       'tablero-item--dragging': dragId === widget.id,
                       'tablero-item--dragover': isEditing && dragOverIdx === idx && dragId !== widget.id,
                     }"
-                    :style="spanStyle(widget.size || def.defaultSize || 'small')"
+                    :style="spanStyle(widget)"
                     @pointerdown="onItemPointerDown($event, widget.id)"
                   >
                     <WidgetShell :config="widget" :definition="def" />
@@ -565,20 +579,6 @@ const widgetSubtitle = computed(() => {
                     </div>
 
                     <div class="widget-cfg-sheet__body">
-                      <!-- Opciones de tamaño (si el widget soporta múltiples) -->
-                      <div v-if="selectedDef?.sizes?.length > 1" class="widget-cfg-row">
-                        <span class="widget-cfg-label">Tamaño</span>
-                        <div class="size-pills">
-                          <button
-                            v-for="sz in selectedDef.sizes"
-                            :key="sz"
-                            class="size-pill"
-                            :class="{ 'size-pill--on': selectedWidget.size === sz }"
-                            @click="updateWidget(selectedWidget.id, { size: sz })"
-                          >{{ SIZE_LABELS[sz] ?? sz }}</button>
-                        </div>
-                      </div>
-
                       <button class="remove-widget-btn" @click="removeSelected">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -619,22 +619,50 @@ const widgetSubtitle = computed(() => {
           </template>
 
           <!-- ══════════════════════════════════════════════
+               Logs
+               ══════════════════════════════════════════════ -->
+          <template v-else-if="currentSection === 'logs'">
+            <header class="s-header s-header--inner">
+              <span class="s-header__title-inner">Logs</span>
+              <div class="s-header__nav">
+                <button class="s-back" @click="back" aria-label="Volver">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <button class="s-close" @click="open = false" aria-label="Cerrar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="layout-placeholder">
+              <span class="layout-placeholder__badge">PRÓXIMAMENTE</span>
+              <span class="layout-placeholder__title">Registro de actividad</span>
+              <span class="layout-placeholder__sub">Eventos del sistema, conexión con HA<br>y diagnóstico del dispositivo</span>
+            </div>
+          </template>
+
+          <!-- ══════════════════════════════════════════════
                Sistema
                ══════════════════════════════════════════════ -->
           <template v-else-if="currentSection === 'sistema'">
             <header class="s-header s-header--inner">
-              <button class="s-back" @click="back" aria-label="Volver">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-                Ajustes
-              </button>
-              <span class="s-header__title-sm">Sistema</span>
-              <button class="s-close" @click="open = false" aria-label="Cerrar">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
+              <span class="s-header__title-inner">Sistema</span>
+              <div class="s-header__nav">
+                <button class="s-back" @click="back" aria-label="Volver">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <button class="s-close" @click="open = false" aria-label="Cerrar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <div class="s-body">
@@ -729,8 +757,8 @@ const widgetSubtitle = computed(() => {
 /* ── Trigger ───────────────────────────────────────── */
 .settings-trigger {
   position: fixed;
-  top: 11px;
-  right: 1rem;
+  top: calc(var(--strip-h, 54px) + 12px);
+  left: 1rem;
   width: 32px;
   height: 32px;
   padding: 0;
@@ -796,13 +824,6 @@ const widgetSubtitle = computed(() => {
   color: var(--fg);
 }
 
-.s-header__title-sm {
-  font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
-  color: var(--fg-dim);
-  letter-spacing: 0.08em;
-}
-
 .s-header__nav {
   display: flex;
   align-items: center;
@@ -860,7 +881,7 @@ const widgetSubtitle = computed(() => {
 .tiles {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   grid-template-rows: 1fr 1fr;
   gap: 16px;
   padding: 24px 40px 40px;
@@ -951,17 +972,34 @@ const widgetSubtitle = computed(() => {
 .tile--sistema .tile__icon svg { color: rgba(170,170,190,.85); }
 .tile--sistema:hover { border-color: rgba(150,150,170,.16); }
 
+.tile--logs .tile__glow { width: 260px; height: 260px; background: #0d7070; top: -70px; right: -40px; }
+.tile--logs .tile__icon { border-color: rgba(40,190,190,.2); background: rgba(20,160,160,.1); }
+.tile--logs .tile__icon svg { color: rgba(60,210,200,.9); }
+.tile--logs:hover { border-color: rgba(40,190,190,.18); }
+
 /* ── Tiles responsive ──────────────────────────────── */
 @media (max-width: 520px) {
   .s-header { padding: 20px 20px 0; }
   .s-header--inner { padding: 0 16px 0 20px; }
-  .tiles { padding: 14px 16px 20px; gap: 10px; }
+  /* En pantalla estrecha volvemos a 2 columnas con 3 filas */
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    padding: 14px 16px 20px;
+    gap: 10px;
+  }
   .tile { padding: 16px 18px; border-radius: 16px; }
   .tile__icon { top: 18px; left: 18px; width: 44px; height: 44px; border-radius: 12px; }
   .tile__icon svg { width: 22px; height: 22px; }
   .tile__title { font-size: 17px; margin-bottom: 5px; }
   .tile__sub { font-size: 11px; }
   .tile__arrow { bottom: 16px; right: 18px; }
+  /* Tile 5 centrado en el 3er row de 2 columnas */
+  .tile:nth-child(5) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 5px);
+  }
 }
 
 @media (max-height: 480px) {
