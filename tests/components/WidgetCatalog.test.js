@@ -9,7 +9,8 @@ const mockRegistry = {
   'home-assistant:light': {
     type:        'home-assistant:light',
     label:       'Luz',
-    defaultSize: 'small',
+    defaultCols: 2,
+    defaultRows: 2,
     configSchema: {
       entity: { type: 'ha-entity', domain: 'light', required: true },
     },
@@ -89,7 +90,8 @@ describe('WidgetCatalog — paso 3: confirmar', () => {
       expect.objectContaining({
         type:   'home-assistant:light',
         entity: 'light.salon',
-        size:   'small',
+        cols:   2,
+        rows:   2,
       }),
     ])
   })

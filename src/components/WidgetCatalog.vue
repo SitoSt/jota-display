@@ -45,7 +45,8 @@ function confirm() {
     type:   selectedType.value.type,
     entity: selectedEntity.value.entity_id,
     label:  customLabel.value || selectedEntity.value.attributes.friendly_name || selectedEntity.value.entity_id,
-    size:   selectedType.value.defaultSize,
+    cols:   selectedType.value.defaultCols ?? 4,
+    rows:   selectedType.value.defaultRows ?? 3,
     panel:  'bottom-bar',
   }])
   emit('done')
