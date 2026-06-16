@@ -623,7 +623,7 @@ const widgetSubtitle = computed(() => {
                ══════════════════════════════════════════════ -->
           <template v-else-if="currentSection === 'sistema'">
             <header class="s-header s-header--inner">
-              <button class="s-back" @click="back">
+              <button class="s-back" @click="back" aria-label="Volver">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M15 18l-6-6 6-6"/>
                 </svg>
@@ -794,6 +794,13 @@ const widgetSubtitle = computed(() => {
   font-size: var(--text-base);
   font-weight: var(--fw-medium);
   color: var(--fg);
+}
+
+.s-header__title-sm {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
 }
 
 .s-header__nav {
@@ -1437,16 +1444,6 @@ const widgetSubtitle = computed(() => {
 }
 
 /* ── Sistema ───────────────────────────────────────── */
-.sistema-grid {
-  flex: 1;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 16px;
-  padding: 32px 40px 40px;
-}
-
 .info-card {
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.08);
