@@ -8,6 +8,7 @@ const _rowHeight  = ref(60)
 const _gap        = ref(8)
 
 let _init = false
+let _dirty = false
 
 function _load(cfg) {
   if (cfg.totalCols != null) _totalCols.value = cfg.totalCols
@@ -16,6 +17,7 @@ function _load(cfg) {
 }
 
 async function _persist() {
+  _dirty = true
   const body = { totalCols: _totalCols.value, rowHeight: _rowHeight.value, gap: _gap.value }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(body))
   try {
@@ -33,10 +35,12 @@ export function useGridConfig() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) _load(JSON.parse(raw))
-    } catch {}
+    } catch (e) {
+      console.warn('[useGridConfig] localStorage corrupto:', e)
+    }
     fetch('/config/grid.json')
       .then(r => r.ok ? r.json() : null)
-      .then(cfg => { if (cfg) _load(cfg) })
+      .then(cfg => { if (cfg && !_dirty) _load(cfg) })
       .catch(() => {})
   }
 
