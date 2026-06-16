@@ -1,6 +1,6 @@
 <!-- src/widgets/WidgetGrid.vue -->
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { resolveDefinition } from './index.js'
 import { useWidgets } from '../composables/useWidgets.js'
 import { useGridConfig } from '../composables/useGridConfig.js'
@@ -12,6 +12,10 @@ const { totalCols, rowHeight, gridGap } = useGridConfig()
 const gridEl = ref(null)
 const containerWidth = ref(0)
 let _ro = null
+
+watch(gridEl, (el) => {
+  if (el) _ro?.observe(el)
+})
 
 onMounted(() => {
   _ro = new ResizeObserver(entries => {
