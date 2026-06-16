@@ -11,7 +11,7 @@ const _SIZE_MAP = {
 }
 
 function _migrateWidget(w) {
-  if (!w.cols && !w.rows) {
+  if (w.cols == null && w.rows == null) {
     const { cols, rows } = _SIZE_MAP[w.size] ?? _SIZE_MAP.small
     const { size: _dropped, ...rest } = w
     return { ...rest, cols, rows }

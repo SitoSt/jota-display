@@ -149,6 +149,7 @@ describe('useWidgets — migración de size', () => {
     const { widgets } = await freshComposable()
     expect(widgets.value[0].cols).toBe(4)
     expect(widgets.value[0].rows).toBe(1)
+    expect(widgets.value[0].size).toBeUndefined()
   })
 
   it('convierte size:medium a cols:8, rows:2', async () => {
@@ -156,6 +157,7 @@ describe('useWidgets — migración de size', () => {
     const { widgets } = await freshComposable()
     expect(widgets.value[0].cols).toBe(8)
     expect(widgets.value[0].rows).toBe(2)
+    expect(widgets.value[0].size).toBeUndefined()
   })
 
   it('convierte size:large a cols:12, rows:2', async () => {
@@ -163,6 +165,7 @@ describe('useWidgets — migración de size', () => {
     const { widgets } = await freshComposable()
     expect(widgets.value[0].cols).toBe(12)
     expect(widgets.value[0].rows).toBe(2)
+    expect(widgets.value[0].size).toBeUndefined()
   })
 
   it('no toca widgets que ya tienen cols y rows', async () => {
