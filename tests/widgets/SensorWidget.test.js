@@ -11,7 +11,12 @@ function makeEntity(state = '21.3', unitAttr = '°C', friendlyName = 'Temperatur
   }
 }
 
-async function freshSensor(entities = makeEntity(), config = { entity: 'sensor.temp' }, size = 'small') {
+async function freshSensor(
+  entities = makeEntity(),
+  config = { entity: 'sensor.temp' },
+  widthPx = 240,
+  heightPx = 180
+) {
   vi.resetModules()
 
   vi.doMock('../../src/composables/useHA.js', () => ({
@@ -26,7 +31,7 @@ async function freshSensor(entities = makeEntity(), config = { entity: 'sensor.t
   const { default: SensorWidget } = await import(
     '../../src/widgets/packs/home-assistant/sensor/SensorWidget.vue'
   )
-  return mount(SensorWidget, { props: { config, size } })
+  return mount(SensorWidget, { props: { config, widthPx, heightPx } })
 }
 
 afterEach(() => vi.resetModules())
@@ -73,5 +78,27 @@ describe('SensorWidget — valor', () => {
   it('muestra "—" cuando state es "unavailable"', async () => {
     const w = await freshSensor(makeEntity('unavailable'))
     expect(w.text()).toContain('—')
+  })
+})
+
+describe('SensorWidget — renderizado adaptativo', () => {
+  it('oculta el label cuando heightPx < 100', async () => {
+    const w = await freshSensor(makeEntity(), { entity: 'sensor.temp' }, 240, 80)
+    expect(w.find('.sensor__label').exists()).toBe(false)
+  })
+
+  it('muestra el label cuando heightPx >= 100', async () => {
+    const w = await freshSensor(makeEntity(), { entity: 'sensor.temp' }, 240, 100)
+    expect(w.find('.sensor__label').exists()).toBe(true)
+  })
+
+  it('oculta el icono cuando heightPx < 80', async () => {
+    const w = await freshSensor(makeEntity(), { entity: 'sensor.temp' }, 240, 60)
+    expect(w.find('.sensor__icon').exists()).toBe(false)
+  })
+
+  it('muestra el icono cuando heightPx >= 80', async () => {
+    const w = await freshSensor(makeEntity(), { entity: 'sensor.temp' }, 240, 80)
+    expect(w.find('.sensor__icon').exists()).toBe(true)
   })
 })

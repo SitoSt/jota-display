@@ -5,7 +5,8 @@ import { useWidget } from '../../../../composables/useWidget.js'
 
 const props = defineProps({
   config:    { type: Object, required: true },
-  size:      { type: String, default: 'small' },
+  widthPx:   { type: Number, default: 0 },
+  heightPx:  { type: Number, default: 0 },
   mockState: { type: Object, default: null },
 })
 
@@ -38,11 +39,14 @@ const displayValue = computed(() => {
 })
 
 const displayUnit = computed(() => ISO_RE.test(state.value?.state ?? '') ? '' : unit.value)
+
+const showIcon  = computed(() => props.heightPx >= 80)
+const showLabel = computed(() => props.heightPx >= 100)
 </script>
 
 <template>
   <div class="sensor" :class="{ 'sensor--unavailable': isUnavail }">
-    <div class="sensor__icon">
+    <div v-if="showIcon" class="sensor__icon">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
         <path
           d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"
@@ -55,7 +59,7 @@ const displayUnit = computed(() => ISO_RE.test(state.value?.state ?? '') ? '' : 
     <div class="sensor__value">
       {{ displayValue }}<span v-if="displayUnit && !isUnavail" class="sensor__unit">{{ displayUnit }}</span>
     </div>
-    <div class="sensor__label">{{ label }}</div>
+    <div v-if="showLabel" class="sensor__label">{{ label }}</div>
   </div>
 </template>
 
