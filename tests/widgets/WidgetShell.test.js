@@ -88,3 +88,68 @@ describe('WidgetShell — estados de conexión', () => {
     expect(w.find('.inner-widget').exists()).toBe(true)
   })
 })
+
+// ── widthPx / heightPx ───────────────────────────────────────────────────────
+describe('WidgetShell — props widthPx/heightPx', () => {
+  it('pasa widthPx y heightPx al componente dinámico', async () => {
+    vi.resetModules()
+
+    let receivedProps = null
+    const SpyComponent = defineComponent({
+      props: ['config', 'widthPx', 'heightPx', 'mockState'],
+      setup(p) { receivedProps = p },
+      template: '<div />',
+    })
+
+    vi.doMock('../../src/composables/useHA.js', () => ({
+      useHA: () => ({ entities: ref({}), connected: ref(false), loading: ref(false) }),
+    }))
+
+    const def = {
+      component: () => Promise.resolve({ default: SpyComponent }),
+      fields: undefined,
+    }
+
+    const { default: WidgetShell } = await import('../../src/widgets/WidgetShell.vue')
+    mount(WidgetShell, {
+      props: {
+        config:     { entity: 'light.test' },
+        definition: def,
+        widthPx:    240,
+        heightPx:   120,
+      },
+    })
+    await flushPromises()
+
+    expect(receivedProps.widthPx).toBe(240)
+    expect(receivedProps.heightPx).toBe(120)
+  })
+
+  it('NO pasa prop size al componente dinámico', async () => {
+    vi.resetModules()
+
+    let receivedProps = null
+    const SpyComponent = defineComponent({
+      props: { config: Object, widthPx: Number, heightPx: Number, mockState: Object },
+      setup(p) { receivedProps = p },
+      template: '<div />',
+    })
+
+    vi.doMock('../../src/composables/useHA.js', () => ({
+      useHA: () => ({ entities: ref({}), connected: ref(false), loading: ref(false) }),
+    }))
+
+    const def = {
+      component: () => Promise.resolve({ default: SpyComponent }),
+      fields: undefined,
+    }
+
+    const { default: WidgetShell } = await import('../../src/widgets/WidgetShell.vue')
+    mount(WidgetShell, {
+      props: { config: { entity: 'light.test' }, definition: def },
+    })
+    await flushPromises()
+
+    expect(receivedProps.size).toBeUndefined()
+  })
+})

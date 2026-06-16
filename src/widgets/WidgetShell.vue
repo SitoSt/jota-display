@@ -8,6 +8,8 @@ const props = defineProps({
   config:     { type: Object, required: true },
   definition: { type: Object, required: true },
   mockState:  { type: Object, default: null },
+  widthPx:    { type: Number, default: 0 },
+  heightPx:   { type: Number, default: 0 },
 })
 
 const { entities, connected, loading } = useHA()
@@ -33,9 +35,6 @@ if (props.definition.component) {
   props.definition.component().then(m => { resolvedComponent.value = m.default })
 }
 
-const size = computed(() =>
-  props.config.size ?? props.definition.defaultSize ?? 'small'
-)
 </script>
 
 <template>
@@ -47,7 +46,8 @@ const size = computed(() =>
       v-else-if="resolvedComponent"
       :is="resolvedComponent"
       :config="config"
-      :size="size"
+      :width-px="widthPx"
+      :height-px="heightPx"
       :mock-state="mockState"
     />
 
