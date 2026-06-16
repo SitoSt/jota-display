@@ -3,20 +3,20 @@ import { ref, readonly } from 'vue'
 
 const STORAGE_KEY = 'jota.grid'
 
-const _cellPx = ref(70)   // tamaño de celda base en px (2×2 = 140×140 por defecto)
-const _cols   = ref(4)    // columnas base (small ocupa 2 → 2 por fila con cols=4)
-const _gap    = ref(8)    // px entre celdas
+const _totalCols = ref(12)
+const _rowHeight  = ref(60)
+const _gap        = ref(8)
 
 let _init = false
 
 function _load(cfg) {
-  if (cfg.cellPx != null) _cellPx.value = cfg.cellPx
-  if (cfg.cols   != null) _cols.value   = cfg.cols
-  if (cfg.gap    != null) _gap.value    = cfg.gap
+  if (cfg.totalCols != null) _totalCols.value = cfg.totalCols
+  if (cfg.rowHeight  != null) _rowHeight.value  = cfg.rowHeight
+  if (cfg.gap        != null) _gap.value        = cfg.gap
 }
 
 async function _persist() {
-  const body = { cellPx: _cellPx.value, cols: _cols.value, gap: _gap.value }
+  const body = { totalCols: _totalCols.value, rowHeight: _rowHeight.value, gap: _gap.value }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(body))
   try {
     await fetch('/config/grid.json', {
@@ -40,13 +40,13 @@ export function useGridConfig() {
       .catch(() => {})
   }
 
-  async function setCellPx(v) {
-    _cellPx.value = Math.max(40, Math.min(160, v))
+  async function setTotalCols(v) {
+    _totalCols.value = Math.max(4, Math.min(24, v))
     await _persist()
   }
 
-  async function setCols(v) {
-    _cols.value = v
+  async function setRowHeight(v) {
+    _rowHeight.value = Math.max(40, Math.min(200, v))
     await _persist()
   }
 
@@ -56,11 +56,11 @@ export function useGridConfig() {
   }
 
   return {
-    cellPx: readonly(_cellPx),
-    gridCols: readonly(_cols),
-    gridGap: readonly(_gap),
-    setCellPx,
-    setCols,
+    totalCols: readonly(_totalCols),
+    rowHeight:  readonly(_rowHeight),
+    gridGap:    readonly(_gap),
+    setTotalCols,
+    setRowHeight,
     setGap,
   }
 }
