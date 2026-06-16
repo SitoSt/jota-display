@@ -181,6 +181,48 @@ const widgetSubtitle = computed(() => {
     ? 'Sin widgets instalados, añadir o eliminar'
     : `${n} widget${n > 1 ? 's' : ''} instalado${n > 1 ? 's' : ''}, añadir o eliminar`
 })
+
+// ── Sheet de tamaño de widget ──────────────────────────────────────────────
+const PREVIEW_ROW_H = 10  // px por fila en el mini-preview
+
+const previewGridStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${totalCols.value}, 1fr)`,
+  gridAutoRows:        `${PREVIEW_ROW_H}px`,
+  gap:                 '2px',
+}))
+
+const selectedWidgetCols = computed(() => selectedWidget.value?.cols ?? 4)
+const selectedWidgetRows = computed(() => selectedWidget.value?.rows ?? 2)
+
+const minCols = computed(() => selectedDef.value?.minCols ?? 2)
+const minRows = computed(() => selectedDef.value?.minRows ?? 2)
+
+function setWidgetCols(v) {
+  if (!selectedWidget.value) return
+  const clamped = Math.max(minCols.value, Math.min(totalCols.value, v))
+  updateWidget(selectedWidget.value.id, { cols: clamped })
+}
+
+function setWidgetRows(v) {
+  if (!selectedWidget.value) return
+  const clamped = Math.max(minRows.value, Math.min(8, v))
+  updateWidget(selectedWidget.value.id, { rows: clamped })
+}
+
+const sizePresets = computed(() => {
+  if (!selectedDef.value) return []
+  const { minCols: mc, minRows: mr, defaultCols: dc, defaultRows: dr } = selectedDef.value
+  return [
+    { label: 'S',  cols: mc,                          rows: mr },
+    { label: 'M',  cols: dc ?? 4,                     rows: dr ?? 2 },
+    { label: 'L',  cols: Math.round((dc ?? 4) * 1.5), rows: (dr ?? 2) + 1 },
+    { label: 'XL', cols: totalCols.value,              rows: (dr ?? 2) + 2 },
+  ]
+})
+
+function isActivePreset(p) {
+  return selectedWidgetCols.value === p.cols && selectedWidgetRows.value === p.rows
+}
 </script>
 
 <template>
@@ -579,6 +621,62 @@ const widgetSubtitle = computed(() => {
                     </div>
 
                     <div class="widget-cfg-sheet__body">
+                      <!-- Mini-preview del grid -->
+                      <div class="wcfg-preview">
+                        <div class="wcfg-preview__grid" :style="previewGridStyle">
+                          <div
+                            v-for="w in widgets"
+                            :key="w.id"
+                            class="wcfg-preview__cell"
+                            :class="{ 'wcfg-preview__cell--active': w.id === selectedWidgetId }"
+                            :style="{
+                              gridColumn: `span ${Math.min(w.cols ?? 4, totalCols)}`,
+                              gridRow:    `span ${w.rows ?? 2}`,
+                            }"
+                          />
+                        </div>
+                      </div>
+
+                      <!-- Sliders de tamaño -->
+                      <div class="wcfg-sliders">
+                        <div class="wcfg-slider-row">
+                          <span class="wcfg-slider-label">Ancho</span>
+                          <input
+                            type="range"
+                            class="wcfg-range"
+                            :min="minCols"
+                            :max="totalCols"
+                            :value="selectedWidgetCols"
+                            @input="setWidgetCols(+$event.target.value)"
+                          />
+                          <span class="wcfg-slider-val">{{ selectedWidgetCols }} col</span>
+                        </div>
+                        <div class="wcfg-slider-row">
+                          <span class="wcfg-slider-label">Alto</span>
+                          <input
+                            type="range"
+                            class="wcfg-range"
+                            :min="minRows"
+                            :max="8"
+                            :value="selectedWidgetRows"
+                            @input="setWidgetRows(+$event.target.value)"
+                          />
+                          <span class="wcfg-slider-val">{{ selectedWidgetRows }} fil</span>
+                        </div>
+                      </div>
+
+                      <!-- Presets -->
+                      <div class="wcfg-presets">
+                        <button
+                          v-for="p in sizePresets"
+                          :key="p.label"
+                          class="wcfg-preset"
+                          :class="{ 'wcfg-preset--active': isActivePreset(p) }"
+                          @click="setWidgetCols(p.cols); setWidgetRows(p.rows)"
+                        >{{ p.label }}</button>
+                      </div>
+
+                      <!-- Eliminar -->
                       <button class="remove-widget-btn" @click="removeSelected">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -1353,9 +1451,8 @@ const widgetSubtitle = computed(() => {
 
 .widget-cfg-sheet__body {
   display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .widget-cfg-row {
@@ -1812,5 +1909,111 @@ const widgetSubtitle = computed(() => {
   padding-bottom: 14px;
   min-height: auto;
   gap: 10px;
+}
+
+/* ── Widget cfg sheet — mini-preview ───────────────── */
+.wcfg-preview {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.wcfg-preview__grid {
+  display: grid;
+  width: 100%;
+}
+
+.wcfg-preview__cell {
+  background: rgba(255,255,255,.06);
+  border-radius: 3px;
+}
+
+.wcfg-preview__cell--active {
+  background: var(--ui-accent, rgba(237,232,225,.55));
+  border-radius: 3px;
+}
+
+/* ── Sliders ────────────────────────────────────────── */
+.wcfg-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wcfg-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wcfg-slider-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: rgba(255,255,255,.3);
+  min-width: 40px;
+}
+
+.wcfg-range {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,.12);
+  outline: none;
+  cursor: pointer;
+}
+.wcfg-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ui-accent, rgba(237,232,225,.9));
+  cursor: pointer;
+}
+.wcfg-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ui-accent, rgba(237,232,225,.9));
+  border: none;
+  cursor: pointer;
+}
+
+.wcfg-slider-val {
+  font-size: var(--text-xs);
+  color: rgba(255,255,255,.55);
+  min-width: 38px;
+  text-align: right;
+}
+
+/* ── Presets ────────────────────────────────────────── */
+.wcfg-presets {
+  display: flex;
+  gap: 8px;
+}
+
+.wcfg-preset {
+  flex: 1;
+  padding: 6px 0;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: rgba(255,255,255,.4);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wcfg-preset:hover { background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); }
+.wcfg-preset--active {
+  background: rgba(237,232,225,.1);
+  border-color: rgba(237,232,225,.35);
+  color: var(--ui-accent);
 }
 </style>
