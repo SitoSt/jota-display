@@ -3,8 +3,27 @@ import { ref, readonly } from 'vue'
 const STORAGE_KEY = 'jota.widgets'
 const widgets = ref([])
 
+const _SIZE_MAP = {
+  small:      { cols: 4,  rows: 2 },
+  horizontal: { cols: 4,  rows: 1 },
+  medium:     { cols: 8,  rows: 2 },
+  large:      { cols: 12, rows: 2 },
+}
+
+function _migrateWidget(w) {
+  if (!w.cols && !w.rows) {
+    const { cols, rows } = _SIZE_MAP[w.size] ?? _SIZE_MAP.small
+    const { size: _dropped, ...rest } = w
+    return { ...rest, cols, rows }
+  }
+  return w
+}
+
 function _ensureIds(items) {
-  return items.map(w => w.id ? w : { ...w, id: crypto.randomUUID() })
+  return items.map(w => {
+    const withId = w.id ? w : { ...w, id: crypto.randomUUID() }
+    return _migrateWidget(withId)
+  })
 }
 
 function _load() {

@@ -25,6 +25,12 @@ function makeWidget(overrides = {}) {
   }
 }
 
+// Widget ya migrado (sin size, con cols/rows)
+function makeMigratedWidget(overrides = {}) {
+  const { size: _dropped, ...base } = makeWidget(overrides)
+  return { ...base, cols: 4, rows: 2 }
+}
+
 beforeEach(() => {
   Object.keys(store).forEach(k => delete store[k])
   vi.resetModules()
@@ -51,11 +57,12 @@ describe('useWidgets — init', () => {
     const saved = [makeWidget()]
     store['jota.widgets'] = JSON.stringify(saved)
     const { widgets } = await freshComposable()
-    expect(widgets.value).toEqual(saved)
+    expect(widgets.value).toEqual([makeMigratedWidget()])
   })
 
   it('si el servidor devuelve un array, reemplaza localStorage', async () => {
     const serverWidgets = [makeWidget({ id: 'server-id', label: 'Del servidor' })]
+    const migratedServer = [makeMigratedWidget({ id: 'server-id', label: 'Del servidor' })]
     global.fetch = vi.fn()
       .mockResolvedValueOnce({
         ok: true,
@@ -64,8 +71,8 @@ describe('useWidgets — init', () => {
     const { widgets } = await freshComposable()
     await nextTick()
     await nextTick()
-    expect(widgets.value).toEqual(serverWidgets)
-    expect(JSON.parse(store['jota.widgets'])).toEqual(serverWidgets)
+    expect(widgets.value).toEqual(migratedServer)
+    expect(JSON.parse(store['jota.widgets'])).toEqual(migratedServer)
   })
 
   it('si el servidor devuelve array vacío, no reemplaza localStorage', async () => {
@@ -78,7 +85,7 @@ describe('useWidgets — init', () => {
     const { widgets } = await freshComposable()
     await nextTick()
     await nextTick()
-    expect(widgets.value).toEqual(local)
+    expect(widgets.value).toEqual([makeMigratedWidget()])
   })
 })
 
@@ -124,5 +131,51 @@ describe('useWidgets — updateWidget', () => {
     updateWidget('uuid-test-1', { label: 'Nuevo nombre' })
     expect(widgets.value[0].label).toBe('Nuevo nombre')
     expect(widgets.value[0].entity).toBe('light.salon')
+  })
+})
+
+// ── migración de size ────────────────────────────────────────────────────────
+describe('useWidgets — migración de size', () => {
+  it('convierte size:small a cols:4, rows:2', async () => {
+    store['jota.widgets'] = JSON.stringify([makeWidget({ size: 'small' })])
+    const { widgets } = await freshComposable()
+    expect(widgets.value[0].cols).toBe(4)
+    expect(widgets.value[0].rows).toBe(2)
+    expect(widgets.value[0].size).toBeUndefined()
+  })
+
+  it('convierte size:horizontal a cols:4, rows:1', async () => {
+    store['jota.widgets'] = JSON.stringify([makeWidget({ size: 'horizontal' })])
+    const { widgets } = await freshComposable()
+    expect(widgets.value[0].cols).toBe(4)
+    expect(widgets.value[0].rows).toBe(1)
+  })
+
+  it('convierte size:medium a cols:8, rows:2', async () => {
+    store['jota.widgets'] = JSON.stringify([makeWidget({ size: 'medium' })])
+    const { widgets } = await freshComposable()
+    expect(widgets.value[0].cols).toBe(8)
+    expect(widgets.value[0].rows).toBe(2)
+  })
+
+  it('convierte size:large a cols:12, rows:2', async () => {
+    store['jota.widgets'] = JSON.stringify([makeWidget({ size: 'large' })])
+    const { widgets } = await freshComposable()
+    expect(widgets.value[0].cols).toBe(12)
+    expect(widgets.value[0].rows).toBe(2)
+  })
+
+  it('no toca widgets que ya tienen cols y rows', async () => {
+    store['jota.widgets'] = JSON.stringify([makeWidget({ cols: 6, rows: 3 })])
+    const { widgets } = await freshComposable()
+    expect(widgets.value[0].cols).toBe(6)
+    expect(widgets.value[0].rows).toBe(3)
+  })
+
+  it('size desconocido cae a cols:4, rows:2', async () => {
+    store['jota.widgets'] = JSON.stringify([makeWidget({ size: 'unknown' })])
+    const { widgets } = await freshComposable()
+    expect(widgets.value[0].cols).toBe(4)
+    expect(widgets.value[0].rows).toBe(2)
   })
 })
