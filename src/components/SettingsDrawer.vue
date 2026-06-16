@@ -5,15 +5,19 @@ import { useIdle } from '../composables/useIdle.js'
 import { useWidgets } from '../composables/useWidgets.js'
 import { useGridConfig } from '../composables/useGridConfig.js'
 import { useHA } from '../composables/useHA.js'
+import { useHAConfig }     from '../composables/useHAConfig.js'
+import { useDeviceConfig } from '../composables/useDeviceConfig.js'
+import { useLayoutConfig } from '../composables/useLayoutConfig.js'
 import { registry, resolveDefinition } from '../widgets/index.js'
 import WidgetCatalog from './WidgetCatalog.vue'
 import WidgetShell from '../widgets/WidgetShell.vue'
 
-const open              = ref(false)
-const currentSection    = ref(null)
-const navDirection      = ref('forward')
-const showCatalog       = ref(false)
-const widgetTab         = ref('tablero')
+const open                    = ref(false)
+const currentSection          = ref(null)
+const navDirection            = ref('forward')
+const showCatalog             = ref(false)
+const preselectedCatalogType  = ref(null)
+const widgetTab               = ref('tablero')
 const isEditing         = ref(false)
 const selectedWidgetId  = ref(null)
 
@@ -21,6 +25,24 @@ const { config, loadIdle, saveIdle } = useIdle()
 const { widgets, removeWidget, updateWidget, reorderWidgets } = useWidgets()
 const { cellPx, gridCols, gridGap, setCellPx, setCols, setGap } = useGridConfig()
 const { connected, entities } = useHA()
+
+const { url: haUrl, saveHAConfig, loadHAConfig }                                    = useHAConfig()
+const { name: deviceName, fullyUrl: deviceFullyUrl, screenTimeout: deviceScreenTimeout,
+        saveDeviceConfig, loadDeviceConfig }                                          = useDeviceConfig()
+const { stripHeight, saveLayoutConfig, loadLayoutConfig }                             = useLayoutConfig()
+
+function onHAUrlBlur(e) {
+  const val = e.target.value.trim()
+  if (val !== haUrl.value) saveHAConfig({ url: val })
+}
+function onDeviceNameBlur(e) {
+  const val = e.target.value.trim()
+  if (val !== deviceName.value) saveDeviceConfig({ name: val })
+}
+function onDeviceFullyUrlBlur(e) {
+  const val = e.target.value.trim()
+  if (val !== deviceFullyUrl.value) saveDeviceConfig({ fully: { url: val } })
+}
 
 // Mapping de spans (igual que WidgetGrid)
 const SPANS = { small: [2,2], horizontal: [2,1], medium: [4,2], large: [99,2] }
@@ -80,6 +102,9 @@ watch(open, async (v) => {
     isEditing.value        = false
     selectedWidgetId.value = null
     await loadIdle()
+    await loadHAConfig()
+    await loadDeviceConfig()
+    await loadLayoutConfig()
   }
 })
 
@@ -123,6 +148,11 @@ function stopEditing() {
   selectedWidgetId.value = null
 }
 
+function openAddForType(def) {
+  preselectedCatalogType.value = def
+  showCatalog.value            = true
+}
+
 function toggleWidgetSelect(id) {
   selectedWidgetId.value = selectedWidgetId.value === id ? null : id
 }
@@ -157,11 +187,10 @@ const widgetSubtitle = computed(() => {
 <template>
   <!-- ── Botón de apertura ─────────────────────────────── -->
   <button class="settings-trigger" @click="open = true" aria-label="Ajustes">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
       <circle cx="12" cy="12" r="3"/>
-      <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
-    <span class="settings-trigger__label">Ajustes</span>
   </button>
 
   <!-- ── Pantalla de ajustes ───────────────────────────── -->
@@ -245,18 +274,19 @@ const widgetSubtitle = computed(() => {
                ══════════════════════════════════════════════ -->
           <template v-else-if="currentSection === 'reposo'">
             <header class="s-header s-header--inner">
-              <button class="s-back" @click="back">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-                Ajustes
-              </button>
-              <span class="s-header__title-sm">Reposo</span>
-              <button class="s-close" @click="open = false" aria-label="Cerrar">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
+              <span class="s-header__title-inner">Reposo</span>
+              <div class="s-header__nav">
+                <button class="s-back" @click="back" aria-label="Volver">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <button class="s-close" @click="open = false" aria-label="Cerrar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <div class="reposo-grid">
@@ -371,18 +401,19 @@ const widgetSubtitle = computed(() => {
                ══════════════════════════════════════════════ -->
           <template v-else-if="currentSection === 'pantalla'">
             <header class="s-header s-header--inner">
-              <button class="s-back" @click="back">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-                Ajustes
-              </button>
-              <span class="s-header__title-sm">Pantalla</span>
-              <button class="s-close" @click="open = false" aria-label="Cerrar">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
+              <span class="s-header__title-inner">Pantalla</span>
+              <div class="s-header__nav">
+                <button class="s-back" @click="back" aria-label="Volver">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <button class="s-close" @click="open = false" aria-label="Cerrar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <div class="layout-placeholder">
@@ -397,25 +428,33 @@ const widgetSubtitle = computed(() => {
                ══════════════════════════════════════════════ -->
           <template v-else-if="currentSection === 'widgets'">
             <header class="s-header s-header--inner">
-              <button class="s-back" @click="showCatalog ? (showCatalog = false) : isEditing ? stopEditing() : back()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-                {{ showCatalog ? 'Widgets' : isEditing ? 'Widgets' : 'Ajustes' }}
-              </button>
-              <span class="s-header__title-sm">Widgets</span>
-              <template v-if="!showCatalog && widgetTab === 'tablero'">
-                <button v-if="isEditing" class="s-action s-action--done" @click="stopEditing">Listo</button>
-                <button v-else-if="widgets.length > 0" class="s-action" @click="isEditing = true">Editar</button>
-                <button v-else class="s-action" @click="showCatalog = true">+ Añadir</button>
-              </template>
-              <button v-else-if="!showCatalog" class="s-action" @click="showCatalog = true">+ Añadir</button>
-              <span v-else class="s-header__side"/>
+              <span class="s-header__title-inner">Widgets</span>
+              <div class="s-header__nav">
+                <template v-if="!showCatalog && widgetTab === 'tablero'">
+                  <button v-if="isEditing" class="s-action s-action--done" @click="stopEditing">Listo</button>
+                  <button v-else-if="widgets.length > 0" class="s-action" @click="isEditing = true">Editar</button>
+                  <button v-else class="s-action" @click="showCatalog = true">+ Añadir</button>
+                </template>
+                <button v-else-if="!showCatalog" class="s-action" @click="showCatalog = true">+ Añadir</button>
+                <button class="s-back" @click="showCatalog ? (showCatalog = false) : isEditing ? stopEditing() : back()" aria-label="Volver">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <button class="s-close" @click="open = false" aria-label="Cerrar">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
             </header>
 
             <!-- Flujo añadir widget (WidgetCatalog) -->
             <div v-if="showCatalog" class="s-body">
-              <WidgetCatalog @done="showCatalog = false" />
+              <WidgetCatalog
+                :initial-type="preselectedCatalogType"
+                @done="showCatalog = false; preselectedCatalogType = null"
+              />
             </div>
 
             <!-- Tabs normales -->
@@ -498,6 +537,7 @@ const widgetSubtitle = computed(() => {
                       v-if="isEditing"
                       class="widget-cfg-btn"
                       :class="{ 'widget-cfg-btn--active': selectedWidgetId === widget.id }"
+                      @pointerdown.stop
                       @click.stop="toggleWidgetSelect(widget.id)"
                       aria-label="Configurar widget"
                     >
@@ -558,19 +598,16 @@ const widgetSubtitle = computed(() => {
                   v-for="type in catalogTypes"
                   :key="type.type"
                   class="catalog-card"
-                  @click="showCatalog = true"
+                  @click="openAddForType(type)"
                 >
                   <div class="catalog-card__preview">
-                    <svg v-if="type.type.includes('light')" width="36" height="36" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 18h6M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6H8.3A7 7 0 0 1 5 9a7 7 0 0 1 7-7z"
-                        fill="rgba(255,165,45,.2)" stroke="rgba(255,180,70,.75)" stroke-width="1.4" stroke-linejoin="round"/>
-                    </svg>
-                    <svg v-else-if="type.type.includes('sensor')" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(96,165,250,.75)" stroke-width="1.4">
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                    </svg>
-                    <svg v-else width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.3)" stroke-width="1.4">
-                      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                    </svg>
+                    <div class="catalog-card__widget-wrap">
+                      <WidgetShell
+                        :config="{ entity: '__preview__', type: type.type, size: type.defaultSize }"
+                        :definition="type"
+                        :mock-state="type.previewState ?? null"
+                      />
+                    </div>
                   </div>
                   <div class="catalog-card__info">
                     <span class="catalog-card__name">{{ type.label }}</span>
@@ -586,7 +623,7 @@ const widgetSubtitle = computed(() => {
                ══════════════════════════════════════════════ -->
           <template v-else-if="currentSection === 'sistema'">
             <header class="s-header s-header--inner">
-              <button class="s-back" @click="back">
+              <button class="s-back" @click="back" aria-label="Volver">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <path d="M15 18l-6-6 6-6"/>
                 </svg>
@@ -600,26 +637,84 @@ const widgetSubtitle = computed(() => {
               </button>
             </header>
 
-            <div class="sistema-grid">
-              <div class="info-card">
-                <span class="info-card__label">APLICACIÓN</span>
-                <span class="info-card__title">jota-display</span>
-                <span class="info-card__sub">v0.1.0 · build 2026.06</span>
+            <div class="s-body">
+              <!-- Info compacta -->
+              <div class="sistema-info">
+                <div class="info-card info-card--sm">
+                  <span class="info-card__label">ESTADO</span>
+                  <span class="info-card__title" :class="{ 'info-card__title--ok': connected }">
+                    {{ connected ? 'HA conectado' : 'HA desconectado' }}
+                  </span>
+                  <span class="info-card__sub">{{ entityCount }} entidades activas</span>
+                </div>
+                <div class="info-card info-card--sm">
+                  <span class="info-card__label">DISPOSITIVO</span>
+                  <span class="info-card__title">{{ deviceName || 'Sin configurar' }}</span>
+                  <span class="info-card__sub">jota-display v0.2.0</span>
+                </div>
               </div>
-              <div class="info-card">
-                <span class="info-card__label">ESTADO</span>
-                <span class="info-card__title info-card__title--ok">En desarrollo</span>
-                <span class="info-card__sub">{{ connected ? 'Home Assistant conectado' : 'Home Assistant desconectado' }}</span>
+
+              <!-- Home Assistant -->
+              <div class="s-section">
+                <span class="s-label">Home Assistant</span>
+                <div class="s-list">
+                  <div class="s-row">
+                    <span class="s-row__dot" :class="{ 's-row__dot--ha': connected }"/>
+                    <span class="s-row__text">URL del servidor</span>
+                    <input
+                      class="s-input"
+                      type="url"
+                      placeholder="http://192.168.1.X:8123"
+                      :value="haUrl"
+                      @blur="onHAUrlBlur"
+                    />
+                  </div>
+                </div>
               </div>
-              <div class="info-card">
-                <span class="info-card__label">HOME ASSISTANT</span>
-                <span class="info-card__title">WebSocket</span>
-                <span class="info-card__sub">{{ entityCount }} entidades activas</span>
+
+              <!-- Dispositivo -->
+              <div class="s-section">
+                <span class="s-label">Dispositivo</span>
+                <div class="s-list">
+                  <div class="s-row">
+                    <span class="s-row__text">Nombre</span>
+                    <input class="s-input" type="text" placeholder="Habitación principal"
+                      :value="deviceName"
+                      @blur="onDeviceNameBlur" />
+                  </div>
+                  <div class="s-row">
+                    <span class="s-row__text">URL Fully Kiosk</span>
+                    <input class="s-input" type="url" placeholder="http://localhost:2323"
+                      :value="deviceFullyUrl"
+                      @blur="onDeviceFullyUrlBlur" />
+                  </div>
+                  <div class="s-row s-row--col">
+                    <span class="s-row__text">Tiempo de pantalla</span>
+                    <div class="chips">
+                      <button
+                        v-for="t in timeoutOptions" :key="t.value"
+                        class="chip"
+                        :class="{ 'chip--on': deviceScreenTimeout === t.value }"
+                        @click="saveDeviceConfig({ screenTimeout: t.value })"
+                      >{{ t.label }}</button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="info-card">
-                <span class="info-card__label">DISPOSITIVO</span>
-                <span class="info-card__title">Termux · Android</span>
-                <span class="info-card__sub">Fully Kiosk Browser</span>
+
+              <!-- Pantalla -->
+              <div class="s-section">
+                <span class="s-label">Pantalla</span>
+                <div class="s-list">
+                  <div class="s-row">
+                    <span class="s-row__text">Altura del strip</span>
+                    <div class="grid-stepper">
+                      <button class="grid-stepper__btn" @click="saveLayoutConfig({ stripHeight: stripHeight - 2 })">−</button>
+                      <span class="grid-stepper__val">{{ stripHeight }}px</span>
+                      <button class="grid-stepper__btn" @click="saveLayoutConfig({ stripHeight: stripHeight + 2 })">+</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </template>
@@ -634,31 +729,27 @@ const widgetSubtitle = computed(() => {
 /* ── Trigger ───────────────────────────────────────── */
 .settings-trigger {
   position: fixed;
-  bottom: 1.25rem;
-  left: 1.25rem;
-  height: 44px;
-  padding: 0 1rem 0 0.75rem;
+  top: 11px;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border-radius: var(--radius-full);
-  background: var(--surface-2);
-  border: 1px solid var(--border-hover);
-  color: var(--fg-dim);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.12);
+  color: rgba(255,255,255,.38);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: center;
   z-index: 10;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.45);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.35);
   transition: background var(--dur-fast) var(--ease-out),
               color var(--dur-fast) var(--ease-out),
               border-color var(--dur-fast) var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
-.settings-trigger:hover { background: var(--surface); color: var(--fg); border-color: rgba(255,255,255,.2); }
-.settings-trigger__label {
-  font-size: var(--text-sm);
-  font-family: var(--font);
-  font-weight: var(--fw-medium);
-}
+.settings-trigger:hover { background: rgba(255,255,255,.11); color: var(--fg); border-color: rgba(255,255,255,.22); }
 
 /* ── Screen & view ─────────────────────────────────── */
 .settings-screen {
@@ -686,10 +777,9 @@ const widgetSubtitle = computed(() => {
 }
 
 .s-header--inner {
-  padding: 0 40px;
+  padding: 0 24px 0 40px;
   height: 64px;
   border-bottom: 1px solid var(--border);
-  position: relative;
 }
 
 .s-header__title {
@@ -700,33 +790,41 @@ const widgetSubtitle = computed(() => {
   color: rgba(255,255,255,.22);
 }
 
-.s-header__title-sm {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.s-header__title-inner {
   font-size: var(--text-base);
   font-weight: var(--fw-medium);
   color: var(--fg);
-  pointer-events: none;
 }
 
-.s-header__side { width: 72px; }
+.s-header__title-sm {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+}
 
-.s-back {
+.s-header__nav {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  background: none;
-  border: none;
-  color: rgba(255,255,255,.45);
-  font-size: var(--text-sm);
-  font-family: var(--font);
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.s-back {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: var(--radius-full);
+  color: rgba(255,255,255,.35);
   cursor: pointer;
-  padding: 0.5rem 0;
-  transition: color var(--dur-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--dur-fast), color var(--dur-fast);
   -webkit-tap-highlight-color: transparent;
 }
-.s-back:hover { color: rgba(255,255,255,.75); }
+.s-back:hover { color: var(--fg); background: rgba(255,255,255,.09); }
 
 .s-close {
   width: 32px;
@@ -852,6 +950,29 @@ const widgetSubtitle = computed(() => {
 .tile--sistema .tile__icon { border-color: rgba(150,150,170,.18); background: rgba(120,120,140,.08); }
 .tile--sistema .tile__icon svg { color: rgba(170,170,190,.85); }
 .tile--sistema:hover { border-color: rgba(150,150,170,.16); }
+
+/* ── Tiles responsive ──────────────────────────────── */
+@media (max-width: 520px) {
+  .s-header { padding: 20px 20px 0; }
+  .s-header--inner { padding: 0 16px 0 20px; }
+  .tiles { padding: 14px 16px 20px; gap: 10px; }
+  .tile { padding: 16px 18px; border-radius: 16px; }
+  .tile__icon { top: 18px; left: 18px; width: 44px; height: 44px; border-radius: 12px; }
+  .tile__icon svg { width: 22px; height: 22px; }
+  .tile__title { font-size: 17px; margin-bottom: 5px; }
+  .tile__sub { font-size: 11px; }
+  .tile__arrow { bottom: 16px; right: 18px; }
+}
+
+@media (max-height: 480px) {
+  .tiles { padding: 10px 20px 14px; gap: 8px; }
+  .tile { padding: 10px 14px; border-radius: 14px; }
+  .tile__icon { top: 10px; left: 14px; width: 36px; height: 36px; border-radius: 10px; }
+  .tile__icon svg { width: 18px; height: 18px; }
+  .tile__title { font-size: 14px; margin-bottom: 3px; }
+  .tile__sub { font-size: 10px; line-height: 1.3; }
+  .tile__arrow { bottom: 10px; right: 14px; font-size: 14px; }
+}
 
 /* ── Reposo — dos columnas ─────────────────────────── */
 .reposo-grid {
@@ -1106,8 +1227,8 @@ const widgetSubtitle = computed(() => {
   cursor: grab;
 }
 
-.tablero-item--dragging  { opacity: 0.25; pointer-events: none; }
-.tablero-item--dragover  { outline: 2px solid rgba(255,255,255,0.35); border-radius: 20px; }
+.tablero-item--dragging  { opacity: 0.20; pointer-events: none; transform: scale(0.94); transition: opacity .1s, transform .1s; }
+.tablero-item--dragover  { outline: 2px dashed rgba(255,255,255,0.45); border-radius: 20px; outline-offset: 2px; }
 
 /* En modo edición: leve opacidad para los no-seleccionados */
 .tablero-grid--editing .tablero-item { opacity: .75; transition: opacity .15s; }
@@ -1291,12 +1412,20 @@ const widgetSubtitle = computed(() => {
 .catalog-card:hover { background: rgba(255,255,255,.055); border-color: rgba(255,255,255,.15); }
 
 .catalog-card__preview {
-  height: 110px;
+  height: 126px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,.18);
   border-bottom: 1px solid rgba(255,255,255,.06);
+  padding: 9px;
+}
+
+.catalog-card__widget-wrap {
+  width: 108px;
+  height: 108px;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 .catalog-card__info { padding: 14px 18px; }
@@ -1315,16 +1444,6 @@ const widgetSubtitle = computed(() => {
 }
 
 /* ── Sistema ───────────────────────────────────────── */
-.sistema-grid {
-  flex: 1;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 16px;
-  padding: 32px 40px 40px;
-}
-
 .info-card {
   background: rgba(255,255,255,.03);
   border: 1px solid rgba(255,255,255,.08);
@@ -1615,4 +1734,45 @@ const widgetSubtitle = computed(() => {
 .expand-leave-active { transition: opacity .15s ease; }
 .expand-enter-from,
 .expand-leave-to { opacity: 0; }
+
+/* ── Sistema — info compacta ───────────────────────── */
+.sistema-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.info-card--sm {
+  padding: 18px 22px;
+}
+.info-card--sm .info-card__title {
+  font-size: 18px;
+}
+
+/* ── Input de configuración ────────────────────────── */
+.s-input {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: rgba(255,255,255,.82);
+  font-size: var(--text-sm);
+  font-family: var(--font);
+  padding: 0.4rem 0.75rem;
+  width: 200px;
+  text-align: right;
+  flex-shrink: 0;
+  transition: border-color var(--dur-fast);
+}
+.s-input::placeholder { color: rgba(255,255,255,.18); }
+.s-input:focus { outline: none; border-color: rgba(255,255,255,.22); }
+
+/* ── Fila en columna (label + chips apilados) ──────── */
+.s-row--col {
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  min-height: auto;
+  gap: 10px;
+}
 </style>
