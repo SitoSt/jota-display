@@ -130,3 +130,33 @@ describe('WidgetGrid', () => {
     }).not.toThrow()
   })
 })
+
+describe('definiciones de widget', () => {
+  beforeEach(() => {
+    vi.doUnmock('../../src/widgets/index.js')
+    vi.resetModules()
+  })
+  afterEach(() => vi.resetModules())
+
+  it('sensor tiene minCols, minRows, defaultCols, defaultRows', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    const def = resolveDefinition('home-assistant:sensor')
+    expect(def.minCols).toBe(2)
+    expect(def.minRows).toBe(2)
+    expect(def.defaultCols).toBe(4)
+    expect(def.defaultRows).toBe(3)
+    expect(def.sizes).toBeUndefined()
+    expect(def.defaultSize).toBeUndefined()
+  })
+
+  it('light tiene minCols, minRows, defaultCols, defaultRows', async () => {
+    const { resolveDefinition } = await import('../../src/widgets/index.js')
+    const def = resolveDefinition('home-assistant:light')
+    expect(def.minCols).toBe(2)
+    expect(def.minRows).toBe(2)
+    expect(def.defaultCols).toBe(4)
+    expect(def.defaultRows).toBe(3)
+    expect(def.sizes).toBeUndefined()
+    expect(def.defaultSize).toBeUndefined()
+  })
+})

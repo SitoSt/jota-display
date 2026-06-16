@@ -2,8 +2,10 @@
 export default {
   type:        'home-assistant:sensor',
   label:       'Sensor',
-  sizes:       ['small', 'medium'],
-  defaultSize: 'small',
+  minCols:     2,
+  minRows:     2,
+  defaultCols: 4,
+  defaultRows: 3,
 
   configSchema: {
     entity: { type: 'ha-entity', domain: 'sensor', required: true },
