@@ -58,7 +58,7 @@ watch(isThinking, (v) => { if (v) { userScrolled = false; scrollToBottom() } })
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 64px;
+  height: 28px;
   background: linear-gradient(to bottom, var(--bg), transparent);
   pointer-events: none;
   z-index: 1;
@@ -76,7 +76,7 @@ watch(isThinking, (v) => { if (v) { userScrolled = false; scrollToBottom() } })
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
-  padding: 64px 0 0.5rem;
+  padding: 0 0 0.5rem;
 }
 
 .bubble-enter-active { transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); }

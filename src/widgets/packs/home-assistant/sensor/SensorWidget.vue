@@ -4,11 +4,14 @@ import { computed } from 'vue'
 import { useWidget } from '../../../../composables/useWidget.js'
 
 const props = defineProps({
-  config: { type: Object, required: true },
-  size:   { type: String, default: 'small' },
+  config:    { type: Object, required: true },
+  size:      { type: String, default: 'small' },
+  mockState: { type: Object, default: null },
 })
 
-const { state, isAvailable } = useWidget(props)
+const { state: haState, isAvailable: haIsAvail } = useWidget(props)
+const state      = computed(() => props.mockState ?? haState.value)
+const isAvailable = computed(() => props.mockState !== null ? true : haIsAvail.value)
 
 const isUnavail = computed(() => !isAvailable.value)
 const label = computed(() =>

@@ -49,20 +49,35 @@ describe('WidgetShell — estados de conexión', () => {
     expect(w.find('.widget-shell__skeleton').exists()).toBe(true)
   })
 
-  it('muestra mensaje sin conexión cuando HA no está conectada', async () => {
+  it('renderiza el componente aunque HA no esté conectada (el widget gestiona su propio estado offline)', async () => {
     const w = await freshShell({ connected: false, loading: false })
+    await flushPromises()
+    expect(w.find('.inner-widget').exists()).toBe(true)
+    expect(w.find('.widget-shell__offline').exists()).toBe(false)
+  })
+
+  it('muestra sin conexión para renderer genérico cuando HA no está conectada', async () => {
+    const w = await freshShell({ connected: false, loading: false, hasComponent: false })
     await flushPromises()
     expect(w.find('.widget-shell__offline').exists()).toBe(true)
   })
 
-  it('muestra mensaje no disponible cuando la entidad es unavailable', async () => {
+  it('renderiza el componente aunque la entidad sea unavailable (el widget gestiona su propio estado offline)', async () => {
     const w = await freshShell({ connected: true, entityState: 'unavailable' })
     await flushPromises()
-    expect(w.find('.widget-shell__unavailable').exists()).toBe(true)
+    expect(w.find('.inner-widget').exists()).toBe(true)
+    expect(w.find('.widget-shell__unavailable').exists()).toBe(false)
   })
 
-  it('muestra mensaje no disponible cuando la entidad no existe en HA', async () => {
+  it('renderiza el componente aunque la entidad no exista en HA', async () => {
     const w = await freshShell({ connected: true, entityState: null })
+    await flushPromises()
+    expect(w.find('.inner-widget').exists()).toBe(true)
+    expect(w.find('.widget-shell__unavailable').exists()).toBe(false)
+  })
+
+  it('muestra no disponible para renderer genérico cuando la entidad es unavailable', async () => {
+    const w = await freshShell({ connected: true, entityState: 'unavailable', hasComponent: false })
     await flushPromises()
     expect(w.find('.widget-shell__unavailable').exists()).toBe(true)
   })

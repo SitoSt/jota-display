@@ -26,5 +26,10 @@ export default {
     setColor:  { service: 'light.turn_on',  data: (c, xtra) => ({ entity_id: c.entity, rgb_color: xtra.rgb }) },
   },
 
+  previewState: {
+    state: 'on',
+    attributes: { friendly_name: 'Ejemplo', brightness: 191, rgb_color: [255, 200, 80] },
+  },
+
   component: () => import('./LightWidget.vue'),
 }

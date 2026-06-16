@@ -118,6 +118,7 @@ html, body {
 .content-area__transcript {
   flex: 1;
   min-height: 0;
+  margin-top: calc(8px - 2rem); /* sube hasta alinearse con los botones de sesión */
 }
 
 /* Transición entre pantalla idle y home */

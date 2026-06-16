@@ -5,11 +5,14 @@ import { useWidget } from '../../../../composables/useWidget.js'
 import { entityToRgb } from './lightColor.js'
 
 const props = defineProps({
-  config: { type: Object, required: true },
-  size:   { type: String, default: 'small' },
+  config:    { type: Object, required: true },
+  size:      { type: String, default: 'small' },
+  mockState: { type: Object, default: null },
 })
 
-const { state, isAvailable, dispatch } = useWidget(props)
+const { state: haState, isAvailable: haIsAvail, dispatch } = useWidget(props)
+const state      = computed(() => props.mockState ?? haState.value)
+const isAvailable = computed(() => props.mockState !== null ? true : haIsAvail.value)
 
 const isOn      = computed(() => state.value?.state === 'on')
 const isUnavail = computed(() => !isAvailable.value)
@@ -202,7 +205,7 @@ const popoverStyle = computed(() => ({
   <div
     ref="widgetRef"
     class="light"
-    :class="{ 'light--on': isOn && !isUnavail }"
+    :class="{ 'light--on': isOn && !isUnavail, 'light--horizontal': size === 'horizontal' }"
     :style="widgetStyle"
     @pointerdown="onPointerDown"
     @pointerup="onPointerUp"
@@ -352,13 +355,14 @@ const popoverStyle = computed(() => ({
     box-shadow   var(--dur-normal) var(--ease-out);
 }
 
-/* ── Zona interior: icono + textos ──────────────────── */
+/* ── Zona interior: layout vertical centrado (small) ── */
 .light__inner {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  justify-content: center;
+  gap: 7px;
+  padding: 14px 10px 6px;
   flex: 1;
   min-height: 0;
 }
@@ -390,17 +394,23 @@ const popoverStyle = computed(() => ({
 .light__texts {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  flex: 1;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
 }
 
 .light__label {
   font-size: var(--text-xs);
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.05em;
   color: rgba(255,255,255,0.28);
+  text-align: center;
   line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
   transition: color var(--dur-normal) var(--ease-out);
 }
 
@@ -409,7 +419,7 @@ const popoverStyle = computed(() => ({
 }
 
 .light__value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 300;
   line-height: 1;
   color: rgba(var(--rgb, 255,165,45), 0.80);
@@ -431,7 +441,7 @@ const popoverStyle = computed(() => ({
 
 .light__bar-track {
   width: 100%;
-  height: 12px;
+  height: 10px;
   background: rgba(255,255,255,0.06);
   border-radius: 4px;
   overflow: hidden;
@@ -442,5 +452,34 @@ const popoverStyle = computed(() => ({
   border-radius: 4px;
   background: rgb(var(--rgb, 255,165,45));
   transition: width var(--dur-slow) var(--ease-out);
+}
+
+/* ── Layout horizontal (size="horizontal") ──────────── */
+.light--horizontal .light__inner {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.light--horizontal .light__icon {
+  width: 28px;
+  height: 28px;
+}
+
+.light--horizontal .light__texts {
+  align-items: flex-start;
+  min-width: 0;
+  width: auto;
+  flex: 1;
+}
+
+.light--horizontal .light__label {
+  text-align: left;
+}
+
+.light--horizontal .light__bar-zone {
+  display: none;
 }
 </style>

@@ -1,10 +1,11 @@
 <!-- src/components/WidgetCatalog.vue -->
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { registry } from '../widgets/index.js'
 import { useHA } from '../composables/useHA.js'
 import { useWidgets } from '../composables/useWidgets.js'
 
+const props = defineProps({ initialType: { type: Object, default: null } })
 const emit = defineEmits(['done'])
 
 const { entities } = useHA()
@@ -14,6 +15,10 @@ const step = ref(1)
 const selectedType = ref(null)
 const selectedEntity = ref(null)
 const customLabel = ref('')
+
+onMounted(() => {
+  if (props.initialType) pickType(props.initialType)
+})
 
 const types = Object.values(registry)
 

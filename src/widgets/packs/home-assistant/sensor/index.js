@@ -20,5 +20,10 @@ export default {
       config.label ?? state.attributes.friendly_name ?? config.entity,
   },
 
+  previewState: {
+    state: '21.5',
+    attributes: { unit_of_measurement: '°C', friendly_name: 'Temperatura' },
+  },
+
   component: () => import('./SensorWidget.vue'),
 }

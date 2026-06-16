@@ -7,6 +7,7 @@ import WidgetRenderer from './WidgetRenderer.vue'
 const props = defineProps({
   config:     { type: Object, required: true },
   definition: { type: Object, required: true },
+  mockState:  { type: Object, default: null },
 })
 
 const { entities, connected, loading } = useHA()
@@ -41,23 +42,26 @@ const size = computed(() =>
   <div class="widget-shell">
     <div v-if="isLoading" class="widget-shell__skeleton" />
 
+    <!-- Widgets con componente propio siempre renderizan: gestionan todos sus estados internamente -->
+    <component
+      v-else-if="resolvedComponent"
+      :is="resolvedComponent"
+      :config="config"
+      :size="size"
+      :mock-state="mockState"
+    />
+
+    <!-- Renderer genérico: necesita conexión y entidad disponible -->
     <div v-else-if="!isConnected" class="widget-shell__offline">
       Sin conexión
     </div>
 
-    <div v-else-if="!isAvailable" class="widget-shell__unavailable">
-      No disponible
-    </div>
-
-    <template v-else>
-      <component
-        v-if="resolvedComponent"
-        :is="resolvedComponent"
-        :config="config"
-        :size="size"
-      />
+    <template v-else-if="fields">
+      <div v-if="!isAvailable" class="widget-shell__unavailable">
+        No disponible
+      </div>
       <WidgetRenderer
-        v-else-if="fields"
+        v-else
         :fields="fields"
         :config="config"
       />
