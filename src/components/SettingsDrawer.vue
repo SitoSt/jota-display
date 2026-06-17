@@ -701,7 +701,7 @@ function isActivePreset(p) {
                   <div class="catalog-card__preview">
                     <div class="catalog-card__widget-wrap">
                       <WidgetShell
-                        :config="{ entity: '__preview__', type: type.type, size: type.defaultSize }"
+                        :config="{ entity: '__preview__', type: type.type }"
                         :definition="type"
                         :mock-state="type.previewState ?? null"
                       />
