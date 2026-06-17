@@ -41,7 +41,8 @@ const displayValue = computed(() => {
 const displayUnit = computed(() => ISO_RE.test(state.value?.state ?? '') ? '' : unit.value)
 
 const showIcon  = computed(() => props.heightPx >= 80)
-const showLabel = computed(() => props.heightPx >= 100)
+const showLabel = computed(() => (props.config.showLabel ?? true) && props.heightPx >= 100)
+const showState = computed(() => props.config.showState ?? true)
 </script>
 
 <template>
@@ -56,7 +57,7 @@ const showLabel = computed(() => props.heightPx >= 100)
         />
       </svg>
     </div>
-    <div class="sensor__value">
+    <div v-if="showState" class="sensor__value">
       {{ displayValue }}<span v-if="displayUnit && !isUnavail" class="sensor__unit">{{ displayUnit }}</span>
     </div>
     <div v-if="showLabel" class="sensor__label">{{ label }}</div>

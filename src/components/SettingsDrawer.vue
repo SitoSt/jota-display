@@ -676,6 +676,18 @@ function isActivePreset(p) {
                         >{{ p.label }}</button>
                       </div>
 
+                      <!-- Opciones de visibilidad -->
+                      <div class="wcfg-toggles">
+                        <div class="wcfg-toggle-row" @click="updateWidget(selectedWidget.id, { showLabel: !(selectedWidget.showLabel ?? true) })">
+                          <span class="wcfg-toggle-label">Mostrar nombre</span>
+                          <span class="sw" :class="{ 'sw--on': selectedWidget.showLabel ?? true }"><span class="sw__knob"/></span>
+                        </div>
+                        <div class="wcfg-toggle-row" @click="updateWidget(selectedWidget.id, { showState: !(selectedWidget.showState ?? true) })">
+                          <span class="wcfg-toggle-label">Mostrar estado</span>
+                          <span class="sw" :class="{ 'sw--on': selectedWidget.showState ?? true }"><span class="sw__knob"/></span>
+                        </div>
+                      </div>
+
                       <!-- Eliminar -->
                       <button class="remove-widget-btn" @click="removeSelected">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2015,5 +2027,33 @@ function isActivePreset(p) {
   background: rgba(237,232,225,.1);
   border-color: rgba(237,232,225,.35);
   color: var(--ui-accent);
+}
+
+/* ── Toggles de visibilidad ─────────────────────────── */
+.wcfg-toggles {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.wcfg-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  min-height: 46px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--dur-fast);
+}
+.wcfg-toggle-row:last-child { border-bottom: none; }
+.wcfg-toggle-row:hover { background: rgba(255,255,255,.03); }
+
+.wcfg-toggle-label {
+  font-size: var(--text-sm);
+  color: rgba(255,255,255,.6);
 }
 </style>

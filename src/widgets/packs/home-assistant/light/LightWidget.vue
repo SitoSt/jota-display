@@ -33,7 +33,8 @@ const hasBrightness = computed(() => state.value?.attributes?.brightness != null
 const rgb    = computed(() => entityToRgb(state.value))
 const rgbStr = computed(() => rgb.value.join(','))
 
-const showLabel = computed(() => props.heightPx >= 100)
+const showLabel = computed(() => (props.config.showLabel ?? true) && props.heightPx >= 100)
+const showState = computed(() => props.config.showState ?? true)
 
 const widgetStyle = computed(() => {
   if (!isOn.value || isUnavail.value) return {}
@@ -240,8 +241,8 @@ const popoverStyle = computed(() => ({
 
       <div class="light__texts">
         <span v-if="showLabel" class="light__label">{{ label }}</span>
-        <span v-if="isOn && !isUnavail" class="light__value">{{ brightness }}%</span>
-        <span v-if="isUnavail" class="light__offline">offline</span>
+        <span v-if="showState && isOn && !isUnavail" class="light__value">{{ brightness }}%</span>
+        <span v-if="showState && isUnavail" class="light__offline">offline</span>
       </div>
     </div>
 
