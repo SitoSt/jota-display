@@ -15,8 +15,7 @@ config/widgets.json
 config/idle.json
 config/theme.json
 
-# Build output (Fase 2+)
-dist/
+# Build output — node_modules nunca, dist/ se versiona para deploy en el móvil
 node_modules/
 
 # Logs del dispositivo
