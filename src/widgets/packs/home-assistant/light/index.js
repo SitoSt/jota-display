@@ -2,10 +2,10 @@
 export default {
   type:        'home-assistant:light',
   label:       'Luz',
-  minCols:     2,
-  minRows:     2,
-  defaultCols: 4,
-  defaultRows: 3,
+  minCols:     1,
+  minRows:     1,
+  defaultCols: 3,
+  defaultRows: 2,
 
   configSchema: {
     entity: { type: 'ha-entity', domain: 'light', required: true },
