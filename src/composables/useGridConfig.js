@@ -3,7 +3,7 @@ import { ref, readonly } from 'vue'
 
 const STORAGE_KEY = 'jota.grid'
 
-const _totalCols = ref(12)
+const _totalCols = ref(24)
 const _rowHeight  = ref(60)
 const _gap        = ref(8)
 
@@ -45,7 +45,7 @@ export function useGridConfig() {
   }
 
   async function setTotalCols(v) {
-    _totalCols.value = Math.max(4, Math.min(24, v))
+    _totalCols.value = Math.max(4, Math.min(48, v))
     await _persist()
   }
 

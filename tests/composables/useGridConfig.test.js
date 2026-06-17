@@ -22,9 +22,9 @@ async function fresh() {
 }
 
 describe('useGridConfig — valores por defecto', () => {
-  it('expone totalCols con defecto 12', async () => {
+  it('expone totalCols con defecto 24', async () => {
     const { totalCols } = await fresh()
-    expect(totalCols.value).toBe(12)
+    expect(totalCols.value).toBe(24)
   })
 
   it('expone rowHeight con defecto 60', async () => {
@@ -60,12 +60,12 @@ describe('useGridConfig — setters', () => {
     expect(rowHeight.value).toBe(200)
   })
 
-  it('setTotalCols clampea a [4, 24]', async () => {
+  it('setTotalCols clampea a [4, 48]', async () => {
     const { totalCols, setTotalCols } = await fresh()
     await setTotalCols(1)
     expect(totalCols.value).toBe(4)
     await setTotalCols(100)
-    expect(totalCols.value).toBe(24)
+    expect(totalCols.value).toBe(48)
   })
 })
 
