@@ -9,18 +9,15 @@ import {
 const entities  = ref({})
 const connected = ref(false)
 const loading   = ref(false)
-let _conn           = null
-let _initPromise    = null
-let _satelliteEntity = null
+let _conn        = null
+let _initPromise = null
 
 async function _init() {
   loading.value = true
   try {
     const res = await fetch('/config/ha.json')
     if (!res.ok) throw new Error('ha.json not found')
-    const cfg = await res.json()
-    const { url, token } = cfg
-    _satelliteEntity = cfg.satellite ?? null
+    const { url, token } = await res.json()
     const auth = createLongLivedTokenAuth(url, token)
     _conn = await createConnection({ auth })
     connected.value = true
@@ -40,16 +37,6 @@ function _ensureInit() {
   return _initPromise
 }
 
-export async function subscribeHAEvents(callback, eventType) {
-  await _ensureInit()
-  if (!_conn) return () => {}
-  return _conn.subscribeEvents(callback, eventType)
-}
-
-export function getSatelliteEntity() {
-  return _satelliteEntity
-}
-
 export function useHA() {
   _ensureInit()
 
@@ -59,9 +46,9 @@ export function useHA() {
   }
 
   return {
-    entities:    readonly(entities),
-    connected:   readonly(connected),
-    loading:     readonly(loading),
+    entities:  readonly(entities),
+    connected: readonly(connected),
+    loading:   readonly(loading),
     callService,
   }
 }

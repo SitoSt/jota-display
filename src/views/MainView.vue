@@ -11,7 +11,7 @@ import RichConversation  from '../components/chat/RichConversation.vue'
 import SessionControls   from '../components/chat/SessionControls.vue'
 import WidgetGrid        from '../widgets/WidgetGrid.vue'
 
-const { connectSSE, connectHA, current } = useVoice()
+const { connectSSE, current } = useVoice()
 const { loadIdle, idleActive, startIdleTimer, dismissIdle } = useIdle()
 const { loadLayout } = useLayout()
 const { historyVisible } = useChat()
@@ -23,7 +23,6 @@ watch(current, (state) => {
 
 onMounted(async () => {
   connectSSE()
-  connectHA()
   await Promise.all([loadLayout(), loadIdle(), applyTheme()])
   if ('wakeLock' in navigator) {
     const req = () => navigator.wakeLock.request('screen').catch(() => {})
