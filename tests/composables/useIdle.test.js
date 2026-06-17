@@ -22,7 +22,7 @@ describe('useIdle', () => {
   it('config inicia con valores por defecto', () => {
     const { config } = mod.useIdle()
     expect(config.value.mode).toBe('clock-widgets')
-    expect(config.value.inactivityTimeout).toBe(60)
+    expect(config.value.inactivityTimeout).toBe(300)
     expect(config.value.clockFormat).toBe('24h')
     expect(config.value.showDate).toBe(true)
     expect(config.value.showDayOfWeek).toBe(true)
@@ -99,18 +99,18 @@ describe('useIdle', () => {
     const { idleActive } = mod.useIdle()
     mod.startIdleTimer()
     expect(idleActive.value).toBe(false)
-    vi.advanceTimersByTime(60_000)
+    vi.advanceTimersByTime(300_000)
     expect(idleActive.value).toBe(true)
   })
 
   it('dismissIdle desactiva idleActive y reinicia el timer', async () => {
     const { idleActive } = mod.useIdle()
     mod.startIdleTimer()
-    vi.advanceTimersByTime(60_000)
+    vi.advanceTimersByTime(300_000)
     expect(idleActive.value).toBe(true)
     mod.dismissIdle()
     expect(idleActive.value).toBe(false)
-    vi.advanceTimersByTime(60_000)
+    vi.advanceTimersByTime(300_000)
     expect(idleActive.value).toBe(true)
   })
 

@@ -2,7 +2,7 @@ import { ref, readonly } from 'vue'
 
 const DEFAULTS = {
   mode: 'clock-widgets',
-  inactivityTimeout: 60,
+  inactivityTimeout: 300,
   clockFormat: '24h',
   showSeconds: false,
   showDate: true,

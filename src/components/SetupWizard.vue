@@ -74,15 +74,6 @@ async function finish() {
       screenTimeout: 300,
     })
     await save('layout', { strip: { height: 54 } })
-    await save('idle', {
-      mode:              'clock-widgets',
-      inactivityTimeout: 60,
-      clockFormat:       '24h',
-      showSeconds:       false,
-      showDate:          true,
-      showDayOfWeek:     true,
-      nightRule:         { enabled: false, from: '23:00', to: '07:00', action: 'off' },
-    })
     markDone()
   } finally {
     saving.value = false
