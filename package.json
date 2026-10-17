@@ -1,0 +1,22 @@
+{
+  "name": "jota-display",
+  "version": "0.1.0",
+  "description": "PWA for Jota voice assistant display",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0",
+    "pinia": "^2.1.0",
+    "home-assistant-js-websocket": "^1.0.0",
+    "markdown-it": "^14.1.0"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0",
+    "@vitejs/plugin-vue": "^5.0.0"
+  }
+}

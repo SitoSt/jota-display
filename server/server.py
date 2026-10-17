@@ -6,47 +6,43 @@ Responsabilidades:
   - Servir los ficheros estáticos de la UI (index.html, app.js, components/, lib/)
   - Mantener un stream SSE en GET /events que el navegador escucha en tiempo real
   - Recibir actualizaciones de estado en POST /state (llamado por los hook scripts)
-  - Controlar la pantalla del dispositivo vía ADB (encender/apagar)
+  - Controlar la pantalla del dispositivo vía WallPanel HTTP API
 
 Modos de despliegue (variable JOTA_MODE):
-  - "worker01" (defecto): ADB remoto a 192.168.1.129, HTTP+HTTPS
-  - "termux":             ADB a localhost, HTTP solo (localhost es contexto seguro en Chrome)
+  - "worker01" (defecto): WallPanel en 192.168.1.129:2971, HTTP+HTTPS
+  - "termux":             WallPanel en localhost:2971, HTTP solo
 
 Variables de entorno:
-  JOTA_MODE       = "worker01" | "termux"
-  JOTA_ADB_PORT   = puerto TLS de Wireless Debugging (defecto 32906)
+  JOTA_MODE = "worker01" | "termux"
 """
 import json
 import os
 import ssl
-import subprocess
 import threading
 import queue
 import time
+import urllib.request
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
 # ── Configuración por entorno ─────────────────────────────────────────────────
 
-TERMUX_MODE    = os.getenv("JOTA_MODE", "worker01") == "termux"
-PHONE_ADB_PORT = int(os.getenv("JOTA_ADB_PORT", "32906"))
+TERMUX_MODE = os.getenv("JOTA_MODE", "worker01") == "termux"
 
 if TERMUX_MODE:
-    BASE_DIR   = Path.home() / "jota-display"
-    ADB_BIN    = str(Path.home() / "../usr/bin/adb")   # ruta en Termux
-    ADB_TARGET = f"localhost:{PHONE_ADB_PORT}"
-    HTTP_PORT  = 8766
-    HTTPS_PORT = None                                  # localhost no necesita HTTPS
-    SSL_CERT   = None
-    SSL_KEY    = None
+    BASE_DIR        = Path.home() / "jota-display"
+    WALLPANEL_URL   = "http://localhost:2971/api/command"
+    HTTP_PORT       = 8766
+    HTTPS_PORT      = None
+    SSL_CERT        = None
+    SSL_KEY         = None
 else:
-    BASE_DIR   = Path(__file__).parent.parent
-    ADB_BIN    = "/usr/bin/adb"
-    ADB_TARGET = f"192.168.1.129:{PHONE_ADB_PORT}"
-    HTTP_PORT  = 8766
-    HTTPS_PORT = 8443
-    SSL_CERT   = "/home/sito/kiosk_cert.pem"
-    SSL_KEY    = "/home/sito/kiosk_key.pem"
+    BASE_DIR        = Path(__file__).parent.parent
+    WALLPANEL_URL   = "http://192.168.1.129:2971/api/command"
+    HTTP_PORT       = 8766
+    HTTPS_PORT      = 8443
+    SSL_CERT        = "/home/sito/kiosk_cert.pem"
+    SSL_KEY         = "/home/sito/kiosk_key.pem"
 
 STATE = {"state": "idle", "text": "", "ts": 0}
 CLIENTS: list[queue.SimpleQueue] = []
@@ -55,42 +51,27 @@ AUTO_SLEEP_SECONDS = 8
 
 
 # ---------------------------------------------------------------------------
-# ADB
+# WallPanel
 # ---------------------------------------------------------------------------
 
-def adb(*args) -> bool:
-    cmd = [ADB_BIN, "-s", ADB_TARGET] + list(args)
-    result = subprocess.run(cmd, capture_output=True, timeout=5)
-    return result.returncode == 0
+def _wallpanel_cmd(payload: dict) -> None:
+    try:
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            WALLPANEL_URL, data=data,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=3)
+    except Exception:
+        pass
 
 
 def screen_wake():
-    adb("shell", "input", "keyevent", "KEYCODE_WAKEUP")
+    _wallpanel_cmd({"wake": True, "wakeTime": 180})
 
 
 def screen_sleep():
-    adb("shell", "input", "keyevent", "KEYCODE_SLEEP")
-
-
-def connect_adb():
-    """Conecta/reconecta al teléfono por IP:puerto explícito."""
-    result = subprocess.run(
-        [ADB_BIN, "connect", ADB_TARGET],
-        capture_output=True, text=True, timeout=10
-    )
-    ok = "connected" in result.stdout
-    if ok:
-        print(f"[adb] Conectado a {ADB_TARGET}")
-    else:
-        print(f"[adb] No se pudo conectar a {ADB_TARGET}: {result.stdout.strip()}")
-    return ok
-
-
-def adb_watchdog():
-    """Hilo que mantiene la conexión ADB viva."""
-    while True:
-        connect_adb()
-        time.sleep(120)  # re-verificar cada 2 min
+    _wallpanel_cmd({"wake": False})
 
 
 # ---------------------------------------------------------------------------
@@ -234,9 +215,7 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     mode_label = "termux" if TERMUX_MODE else "worker01"
-    print(f"[jota-display] modo={mode_label}  base={BASE_DIR}  adb={ADB_TARGET}")
-
-    threading.Thread(target=adb_watchdog, daemon=True).start()
+    print(f"[jota-display] modo={mode_label}  base={BASE_DIR}  wallpanel={WALLPANEL_URL}")
 
     http_server = ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), Handler)
 
